@@ -11,6 +11,7 @@
     Output: .json file
 
 """
+import logging
 import pandas as pd
 
 categories_map = {
@@ -57,7 +58,11 @@ categories = pd.DataFrame(
 
 assert categories["category_label"].isna().sum() == 0
 
-categories.to_json(
-    r"datasets\video_categories.json", 
-    index=False
-    )
+try:
+    categories.to_json(
+        r"datasets\video_categories.json", 
+        index=False
+        )
+    logging.info("Categories dataset written to datalake.")
+except Exception as e:
+    logging.error(e)

@@ -19,6 +19,16 @@ Welcome to **Who Am I? | YouTube**
 - requirements.txt
 - .gitignore
 
+## YouTube and YouTube Music Option Info
+Source: [Google Takeout](https://takeout.google.com/)
+
+### Edit file formats
+
+*subscriptions* => Your channel subscriptions.
+
+*comment* => Comment you've created.
+
+*history* => Your watch and search history from YouTube. A machine-readable format (JSON).
 
 ## Tech Stack
 
