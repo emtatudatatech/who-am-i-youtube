@@ -163,3 +163,9 @@ cython_debug/
 
 # Data
 datasets/
+
+# Configurations
+.env
+
+# Notebooks
+*.ipynb
