@@ -16,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("database_ops.txt"),
+        logging.FileHandler("youtube.log"),
         logging.StreamHandler(sys.stdout),
     ],
 )
@@ -123,10 +123,10 @@ def main():
     logger.info(f"   Successfully fetched metadata for {len(video_metadata)} videos.")
 
     # --------------------------------------------------------------------------
-    # STEP 3: Batch Query YouTube API for Channel Images
+    # STEP 3: Batch Query YouTube API for Channel Images and Country
     # --------------------------------------------------------------------------
-    logger.info("Step 3: Fetching Channel Avatar images from YouTube API...")
-    channel_metadata: Dict[str, str] = {}
+    logger.info("Step 3: Fetching Channel details (Avatars & Country) from YouTube API...")
+    channel_metadata: Dict[str, dict] = {}
 
     unique_channel_ids = list(channel_ids_to_fetch)
     for chunk in batch_list(unique_channel_ids, 50):
@@ -147,16 +147,23 @@ def main():
                     thumbnails.get("medium", {}).get("url") or
                     thumbnails.get("default", {}).get("url")
                 )
-                channel_metadata[c_id] = avatar_url
+
+                # Extract channel country code (ISO 2-letter code or None)
+                country_code = snippet.get("country")
+
+                channel_metadata[c_id] = {
+                    "channelImageUrl": avatar_url,
+                    "channelCountry": country_code
+                }
         except HttpError as e:
             logger.warning(f"   API Error during channel fetch: {e}")
 
-    logger.info(f"   Successfully fetched profile avatars for {len(channel_metadata)} channels.")
+    logger.info(f"   Successfully fetched details for {len(channel_metadata)} channels.")
 
     # --------------------------------------------------------------------------
     # STEP 4: Merge Metadata back into JSON records and Save
     # --------------------------------------------------------------------------
-    logger.info(" Step 4: Enriching original JSON records and exporting...")
+    logger.info("Step 4: Enriching original JSON records and exporting...")
     enriched_count = 0
 
     for entry in data:
@@ -164,19 +171,22 @@ def main():
         if vid_id and vid_id in video_metadata:
             v_info = video_metadata[vid_id]
             c_id = v_info.get("channelId")
+            
+            c_info = channel_metadata.get(c_id, {}) if c_id else {}
 
             # Enrich the record directly
             entry["categoryId"] = v_info.get("categoryId")
             entry["videoThumbnailUrl"] = v_info.get("videoThumbnailUrl")
             entry["channelId"] = c_id
-            entry["channelImageUrl"] = channel_metadata.get(c_id) if c_id else None
+            entry["channelImageUrl"] = c_info.get("channelImageUrl")
+            entry["channelCountry"] = c_info.get("channelCountry")
             enriched_count += 1
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    logger.info(f" Finished! Successfully enriched {enriched_count} records.")
-    logger.info(f" File saved as: {OUTPUT_FILE}")
+    logger.info(f"Finished! Successfully enriched {enriched_count} records.")
+    logger.info(f"File saved as: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
