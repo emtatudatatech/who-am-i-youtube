@@ -1,0 +1,182 @@
+import json
+import os
+import sys
+import re
+from typing import Dict, List, Set
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from dotenv import load_dotenv
+import logging
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("database_ops.txt"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+logger = logging.getLogger(__name__)
+
+load_dotenv()
+
+API_KEY = os.getenv("YOUTUBE_API_KEY")
+INPUT_FILE = "datasets/MyActivity.json"
+OUTPUT_FILE = "datasets/MyActivity_enriched.json"
+
+# ==============================================================================
+# HELPER FUNCTIONS
+# ==============================================================================
+def extract_video_id(url: str) -> str:
+    """Extracts the 11-character YouTube video ID from a URL."""
+    if not url:
+        return None
+    match = re.search(r"(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})", url)
+    return match.group(1) if match else None
+
+def batch_list(items: List, size: int = 50):
+    """Yield successive n-sized chunks from a list (YouTube API max batch is 50)."""
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
+
+# ==============================================================================
+# MAIN PROCESSING
+# ==============================================================================
+def main():
+    if not API_KEY:
+        logger.error("Error: Please set the YOUTUBE_API_KEY environment variable.")
+        return
+
+    logger.info("Loading local MyActivity.json file...")
+    with open(INPUT_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    youtube = build("youtube", "v3", developerKey=API_KEY)
+
+    # --------------------------------------------------------------------------
+    # STEP 1: Parse Watch History and collect unique Video IDs
+    # --------------------------------------------------------------------------
+    logger.info("Step 1: Parsing Watch History records...")
+    video_records = []
+    video_ids_to_fetch: Set[str] = set()
+
+    for entry in data:
+        # Ignore search history or non-watch events
+        controls = entry.get("activityControls", [])
+        if "YouTube watch history" not in controls:
+            continue
+
+        title_url = entry.get("titleUrl", "")
+        vid_id = extract_video_id(title_url)
+
+        if vid_id:
+            entry["videoId"] = vid_id
+            video_records.append(entry)
+            video_ids_to_fetch.add(vid_id)
+
+    logger.info(f"   Found {len(video_records)} watch logs across {len(video_ids_to_fetch)} unique videos.")
+
+    # --------------------------------------------------------------------------
+    # STEP 2: Batch Query YouTube API for Video Details (categoryId & Thumbnails)
+    # --------------------------------------------------------------------------
+    logger.info("Step 2: Fetching Video metadata from YouTube API...")
+    video_metadata: Dict[str, dict] = {}
+    channel_ids_to_fetch: Set[str] = set()
+
+    unique_video_ids = list(video_ids_to_fetch)
+    for chunk in batch_list(unique_video_ids, 50):
+        try:
+            response = youtube.videos().list(
+                part="snippet",
+                id=",".join(chunk)
+            ).execute()
+
+            for item in response.get("items", []):
+                vid_id = item["id"]
+                snippet = item["snippet"]
+                
+                # Extract best available thumbnail URL
+                thumbnails = snippet.get("thumbnails", {})
+                best_thumb = (
+                    thumbnails.get("maxres", {}).get("url") or
+                    thumbnails.get("high", {}).get("url") or
+                    thumbnails.get("medium", {}).get("url") or
+                    thumbnails.get("default", {}).get("url")
+                )
+
+                channel_id = snippet.get("channelId")
+                if channel_id:
+                    channel_ids_to_fetch.add(channel_id)
+
+                video_metadata[vid_id] = {
+                    "categoryId": snippet.get("categoryId"),
+                    "videoThumbnailUrl": best_thumb,
+                    "channelId": channel_id
+                }
+        except HttpError as e:
+            logger.warning(f"   API Error during video fetch: {e}")
+
+    logger.info(f"   Successfully fetched metadata for {len(video_metadata)} videos.")
+
+    # --------------------------------------------------------------------------
+    # STEP 3: Batch Query YouTube API for Channel Images
+    # --------------------------------------------------------------------------
+    logger.info("Step 3: Fetching Channel Avatar images from YouTube API...")
+    channel_metadata: Dict[str, str] = {}
+
+    unique_channel_ids = list(channel_ids_to_fetch)
+    for chunk in batch_list(unique_channel_ids, 50):
+        try:
+            response = youtube.channels().list(
+                part="snippet",
+                id=",".join(chunk)
+            ).execute()
+
+            for item in response.get("items", []):
+                c_id = item["id"]
+                snippet = item["snippet"]
+                
+                # Extract channel profile picture
+                thumbnails = snippet.get("thumbnails", {})
+                avatar_url = (
+                    thumbnails.get("high", {}).get("url") or
+                    thumbnails.get("medium", {}).get("url") or
+                    thumbnails.get("default", {}).get("url")
+                )
+                channel_metadata[c_id] = avatar_url
+        except HttpError as e:
+            logger.warning(f"   API Error during channel fetch: {e}")
+
+    logger.info(f"   Successfully fetched profile avatars for {len(channel_metadata)} channels.")
+
+    # --------------------------------------------------------------------------
+    # STEP 4: Merge Metadata back into JSON records and Save
+    # --------------------------------------------------------------------------
+    logger.info(" Step 4: Enriching original JSON records and exporting...")
+    enriched_count = 0
+
+    for entry in data:
+        vid_id = entry.get("videoId")
+        if vid_id and vid_id in video_metadata:
+            v_info = video_metadata[vid_id]
+            c_id = v_info.get("channelId")
+
+            # Enrich the record directly
+            entry["categoryId"] = v_info.get("categoryId")
+            entry["videoThumbnailUrl"] = v_info.get("videoThumbnailUrl")
+            entry["channelId"] = c_id
+            entry["channelImageUrl"] = channel_metadata.get(c_id) if c_id else None
+            enriched_count += 1
+
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    logger.info(f" Finished! Successfully enriched {enriched_count} records.")
+    logger.info(f" File saved as: {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    main()
