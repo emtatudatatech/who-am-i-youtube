@@ -12,9 +12,10 @@ import logging
 import sys
 
 from pipelines.common.db import batch_upsert_history, get_conn, set_pipeline_state
+from pipelines.common.logging_config import setup_logging
 from pipelines.common.parse import record_to_row
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+setup_logging()
 logger = logging.getLogger(__name__)
 
 DEFAULT_INPUT = "datasets/MyActivity_enriched.json"
@@ -35,7 +36,8 @@ def load(path: str) -> None:
     # Bookmark the newest UTC instant seen, for the incremental updater.
     with conn.cursor() as cur:
         cur.execute("SELECT max(\"time\") FROM history")
-        max_time = cur.fetchone()[0]
+        row = cur.fetchone()
+        max_time = row[0] if row else None
     if max_time is not None:
         iso = max_time.isoformat()
         set_pipeline_state(conn, "last_synced_time", iso)
@@ -43,7 +45,8 @@ def load(path: str) -> None:
 
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM history")
-        logger.info("history now has %d rows.", cur.fetchone()[0])
+        row = cur.fetchone()
+        logger.info("history now has %d rows.", row[0] if row else 0)
     conn.close()
 
 

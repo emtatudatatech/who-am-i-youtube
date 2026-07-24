@@ -4,7 +4,7 @@
     ------------
     Creator: @emtatudatatech
     Version: 2.0
-    Version Date: October 31, 2024 (v1) / rebuilt to load Neon Postgres (v2)
+    Version Date: July 24, 2026 (v1) / rebuilt to load Neon Postgres (v2)
     Purpose: Populate the `video_categories` dimension table joined to
              history.category_id. YouTube's category IDs are stable and
              region-independent for this account's data, so this uses a
@@ -19,8 +19,9 @@ import logging
 from psycopg2.extras import execute_values
 
 from pipelines.common.db import get_conn
+from pipelines.common.logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+setup_logging()
 logger = logging.getLogger(__name__)
 
 categories_map = {
@@ -76,7 +77,8 @@ def main() -> None:
 
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM video_categories")
-        total = cur.fetchone()[0]
+        row = cur.fetchone()
+        total = row[0] if row else 0
     conn.close()
 
     logger.info("Upserted %d categories; video_categories now has %d rows.", len(rows), total)

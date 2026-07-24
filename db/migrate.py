@@ -10,8 +10,9 @@ import logging
 import pathlib
 
 from pipelines.common.db import get_conn
+from pipelines.common.logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+setup_logging()
 logger = logging.getLogger(__name__)
 
 MIGRATIONS_DIR = pathlib.Path(__file__).parent / "migrations"

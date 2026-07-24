@@ -1,26 +1,20 @@
 import argparse
 import json
+import logging
 import os
-import sys
 import re
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
+
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from dotenv import load_dotenv
-import logging
+
+from pipelines.common.logging_config import setup_logging
 
 # ==============================================================================
 # CONFIGURATION
 # ==============================================================================
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("youtube.log"),
-        logging.StreamHandler(sys.stdout),
-    ],
-)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -32,7 +26,7 @@ DEFAULT_OUTPUT_FILE = "datasets/MyActivity_enriched.json"
 # ==============================================================================
 # HELPER FUNCTIONS
 # ==============================================================================
-def extract_video_id(url: str) -> str:
+def extract_video_id(url: Optional[str]) -> Optional[str]:
     """Extracts the 11-character YouTube video ID from a URL."""
     if not url:
         return None
@@ -45,16 +39,19 @@ def batch_list(items: List, size: int = 50):
         yield items[i : i + size]
 
 # ==============================================================================
-# MAIN PROCESSING
+# ENRICHMENT (in place, no file I/O — reusable by the incremental updater)
 # ==============================================================================
-def main(input_file: str = DEFAULT_INPUT_FILE, output_file: str = DEFAULT_OUTPUT_FILE):
-    if not API_KEY:
-        logger.error("Error: Please set the YOUTUBE_API_KEY environment variable.")
-        return
+def enrich_entries(data: List[dict]) -> int:
+    """Enrich watch-type entries in `data` in place with YouTube metadata
+    (videoId, categoryId, videoThumbnailUrl, channelId, channelImageUrl,
+    channelCountry, videoDuration). Returns the number of records enriched.
 
-    logger.info("Loading %s ...", input_file)
-    with open(input_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    Operates on a list of raw MyActivity entries so callers can enrich either a
+    whole export (main) or just the newly-downloaded delta (incremental_update)
+    without writing intermediate files.
+    """
+    if not API_KEY:
+        raise RuntimeError("YOUTUBE_API_KEY is not set (check your .env).")
 
     youtube = build("youtube", "v3", developerKey=API_KEY)
 
@@ -188,11 +185,29 @@ def main(input_file: str = DEFAULT_INPUT_FILE, output_file: str = DEFAULT_OUTPUT
             entry["videoDuration"] = v_info.get("videoDuration")
             enriched_count += 1
 
+    logger.info(f"Enriched {enriched_count} records.")
+    return enriched_count
+
+
+# ==============================================================================
+# MAIN (whole-file enrichment)
+# ==============================================================================
+def main(input_file: str = DEFAULT_INPUT_FILE, output_file: str = DEFAULT_OUTPUT_FILE) -> None:
+    if not API_KEY:
+        logger.error("Error: Please set the YOUTUBE_API_KEY environment variable.")
+        return
+
+    logger.info("Loading %s ...", input_file)
+    with open(input_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    enrich_entries(data)
+
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    logger.info(f"Finished! Successfully enriched {enriched_count} records.")
-    logger.info(f"File saved as: {output_file}")
+    logger.info("Finished! File saved as: %s", output_file)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enrich a Google Takeout MyActivity.json export with YouTube metadata.")
