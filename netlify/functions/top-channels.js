@@ -1,4 +1,4 @@
-import { sql, ok, fail, yearParam } from "./_shared/db.js";
+import { sql, ok, fail, yearParam, VIDEO_FILTER } from "./_shared/db.js";
 
 // Top 5 channels by watched count. ?year=YYYY (or omit / 'all' for all-time).
 export async function handler(event) {
@@ -7,7 +7,7 @@ export async function handler(event) {
     const rows = await sql.query(
       `SELECT channel_id, channel_name, channel_image_url, count(*)::int AS count
          FROM history
-        WHERE activity_type='watched'
+        WHERE ${VIDEO_FILTER}
           AND channel_id IS NOT NULL
           AND ($1::int IS NULL OR EXTRACT(YEAR FROM time_eat) = $1)
         GROUP BY channel_id, channel_name, channel_image_url

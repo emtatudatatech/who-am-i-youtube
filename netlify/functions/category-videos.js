@@ -1,4 +1,4 @@
-import { sql, ok, fail, yearParam } from "./_shared/db.js";
+import { sql, ok, fail, yearParam, VIDEO_FILTER } from "./_shared/db.js";
 
 // Drill-down: top 5 watched videos within a category. ?category=ID&year=YYYY.
 export async function handler(event) {
@@ -10,7 +10,7 @@ export async function handler(event) {
       `SELECT title, title_url, video_thumbnail_url,
               channel_name, video_id, count(*)::int AS count
          FROM history
-        WHERE activity_type='watched'
+        WHERE ${VIDEO_FILTER}
           AND category_id = $1
           AND ($2::int IS NULL OR EXTRACT(YEAR FROM time_eat) = $2)
         GROUP BY title, title_url, video_thumbnail_url, channel_name, video_id

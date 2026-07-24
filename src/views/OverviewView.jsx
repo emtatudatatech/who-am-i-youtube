@@ -30,30 +30,33 @@ function ChannelRibbon() {
   );
 }
 
-function ShortsSplit({ colors }) {
-  const { data, loading } = useApi("videos-vs-shorts");
+function ContentMix({ colors }) {
+  const { data, loading } = useApi("content-mix");
   if (loading) return <Loading />;
   if (!data) return <Empty />;
-  const total = data.videos + data.shorts;
-  const pie = [
-    { name: "Long-form", value: data.videos, fill: colors.s1 },
+  const parts = [
+    { name: "Videos", value: data.videos, fill: colors.s1 },
     { name: "Shorts", value: data.shorts, fill: colors.red },
+    { name: "Ads", value: data.ads, fill: colors.s4 },
+    { name: "Posts", value: data.posts, fill: colors.s3 },
   ];
+  const total = parts.reduce((s, p) => s + p.value, 0) || 1;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <ResponsiveContainer width="55%" height={190}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <ResponsiveContainer width="48%" height={200}>
         <PieChart>
-          <Pie data={pie} dataKey="value" innerRadius={52} outerRadius={80} paddingAngle={2} stroke="var(--surface-1)" strokeWidth={2}>
-            {pie.map((p, i) => <Cell key={i} fill={p.fill} />)}
+          <Pie data={parts} dataKey="value" innerRadius={52} outerRadius={82} paddingAngle={2} stroke="var(--surface-1)" strokeWidth={2}>
+            {parts.map((p, i) => <Cell key={i} fill={p.fill} />)}
           </Pie>
           <Tooltip content={<ChartTooltip valueFormatter={fmt} />} />
         </PieChart>
       </ResponsiveContainer>
-      <div>
-        <div className="legend" style={{ flexDirection: "column", gap: 8 }}>
-          <div><i style={{ background: colors.s1 }} /><b>{fmt(data.videos)}</b> long-form ({((data.videos / total) * 100).toFixed(1)}%)</div>
-          <div><i style={{ background: colors.red }} /><b>{fmt(data.shorts)}</b> Shorts ({((data.shorts / total) * 100).toFixed(1)}%)</div>
-        </div>
+      <div className="legend" style={{ flexDirection: "column", gap: 8 }}>
+        {parts.map((p) => (
+          <div key={p.name}>
+            <i style={{ background: p.fill }} /><b>{fmt(p.value)}</b> {p.name} ({((p.value / total) * 100).toFixed(1)}%)
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -128,10 +131,10 @@ export default function OverviewView({ theme, stats }) {
   return (
     <div className="grid" style={{ gap: 16 }}>
       <div className="grid cols-4">
-        <StatCard icon="play_circle" value={fmt(stats.totalWatched)} label="Videos watched" />
+        <StatCard icon="play_circle" value={fmt(stats.videos)} label="Videos watched" foot="Actual videos — excludes ads & Shorts" />
         <StatCard icon="groups" value={fmt(stats.uniqueChannels)} label="Unique channels" />
         <StatCard icon="calendar_today" value={fmt1(stats.avgPerDay)} label="Avg videos / active day" />
-        <StatCard icon="search" value={fmt(stats.totalSearches)} label="Searches made" />
+        <StatCard icon="search" value={fmt(stats.searches)} label="Searches made" />
       </div>
 
       <Panel icon="stream" title="Channels on rotation" note="Your most-watched channels, all-time — hover to pause.">
@@ -139,8 +142,8 @@ export default function OverviewView({ theme, stats }) {
       </Panel>
 
       <div className="grid cols-2">
-        <Panel icon="movie" title="Videos vs. Shorts" note="Shorts detected from the #shorts title tag (untagged Shorts are missed).">
-          <ShortsSplit colors={colors} />
+        <Panel icon="donut_large" title="Content mix" note="Actual videos vs. Shorts, ads (Takeout's “From Google Ads”) and community posts. Ads & posts are kept out of every other chart.">
+          <ContentMix colors={colors} />
         </Panel>
         <Panel icon="public" title="African creators" note="Based on the channel's self-reported YouTube country.">
           <African />

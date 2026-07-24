@@ -60,7 +60,7 @@ export default function App() {
         {stats && (
           <>
             <span style={{ marginLeft: "auto" }} />
-            <b>{stats.totalWatched.toLocaleString()}</b>
+            <b>{stats.videos.toLocaleString()}</b>
             <span>videos watched</span>
           </>
         )}
@@ -90,8 +90,9 @@ export default function App() {
 
       <p className="footer-note">
         Built from a Google Takeout “My Activity” export, enriched via the YouTube Data API and stored on Neon Postgres.
-        All time-of-day / day / month insights use East Africa Time (UTC+3). “African creator” counts use the channel’s
-        self-reported YouTube country. Shorts are detected from the <code>#shorts</code> title tag (a Short without the tag is missed).
+        All time-of-day / day / month insights use East Africa Time (UTC+3). Every video/channel chart counts actual videos
+        only — ads (Takeout’s <code>From Google Ads</code>), Shorts (<code>#shorts</code> tag) and community posts are tracked
+        separately and never mixed in. “African creator” counts use the channel’s self-reported YouTube country.
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { sql, ok, fail } from "./_shared/db.js";
+import { sql, ok, fail, VIDEO_FILTER } from "./_shared/db.js";
 
 // Year-Month watch counts, each period annotated with its top channel (name + logo).
 export async function handler() {
@@ -7,7 +7,7 @@ export async function handler() {
       sql.query(
         `SELECT to_char(date_trunc('month', time_eat), 'YYYY-MM') AS period,
                 count(*)::int AS count
-           FROM history WHERE activity_type='watched'
+           FROM history WHERE ${VIDEO_FILTER}
           GROUP BY 1 ORDER BY 1`
       ),
       sql.query(
@@ -15,7 +15,7 @@ export async function handler() {
            SELECT to_char(date_trunc('month', time_eat), 'YYYY-MM') AS period,
                   channel_name, channel_image_url, count(*)::int AS c
              FROM history
-            WHERE activity_type='watched' AND channel_id IS NOT NULL
+            WHERE ${VIDEO_FILTER} AND channel_id IS NOT NULL
             GROUP BY 1, channel_name, channel_image_url
          ),
          ranked AS (

@@ -8,7 +8,7 @@ const cases = [
   ["top-channels", {}],
   ["watch-trend", {}],
   ["time-patterns", {}],
-  ["videos-vs-shorts", {}],
+  ["content-mix", {}],
   ["african-creators", {}],
   ["top-categories", { year: "2023" }],
   ["category-videos", { category: "17", year: "2023" }],

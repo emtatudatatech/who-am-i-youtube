@@ -1,4 +1,4 @@
-import { sql, ok, fail } from "./_shared/db.js";
+import { sql, ok, fail, VIDEO_FILTER } from "./_shared/db.js";
 
 // Average number of videos watched per active day, overall and per year.
 export async function handler() {
@@ -7,13 +7,13 @@ export async function handler() {
       sql.query(
         `SELECT count(*)::int AS videos,
                 count(DISTINCT date_trunc('day', time_eat))::int AS days
-           FROM history WHERE activity_type='watched'`
+           FROM history WHERE ${VIDEO_FILTER}`
       ),
       sql.query(
         `SELECT EXTRACT(YEAR FROM time_eat)::int AS year,
                 count(*)::int AS videos,
                 count(DISTINCT date_trunc('day', time_eat))::int AS days
-           FROM history WHERE activity_type='watched'
+           FROM history WHERE ${VIDEO_FILTER}
           GROUP BY 1 ORDER BY 1`
       ),
     ]);

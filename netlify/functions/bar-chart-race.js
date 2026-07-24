@@ -1,4 +1,4 @@
-import { sql, ok, fail } from "./_shared/db.js";
+import { sql, ok, fail, VIDEO_FILTER } from "./_shared/db.js";
 
 // Data for an animated "racing" bar chart: cumulative watched counts per channel
 // at the end of each year, for the top channels overall. Frames are precomputed.
@@ -8,7 +8,7 @@ export async function handler() {
       `WITH top AS (
          SELECT channel_id
            FROM history
-          WHERE activity_type='watched' AND channel_id IS NOT NULL
+          WHERE ${VIDEO_FILTER} AND channel_id IS NOT NULL
           GROUP BY channel_id
           ORDER BY count(*) DESC
           LIMIT 12
@@ -20,7 +20,7 @@ export async function handler() {
               count(*)::int AS count
          FROM history h
          JOIN top ON top.channel_id = h.channel_id
-        WHERE h.activity_type='watched'
+        WHERE ${VIDEO_FILTER}
         GROUP BY h.channel_id, h.channel_name, h.channel_image_url, year
         ORDER BY year`
     );

@@ -1,4 +1,4 @@
-import { sql, ok, fail } from "./_shared/db.js";
+import { sql, ok, fail, VIDEO_FILTER } from "./_shared/db.js";
 
 // Monthly watched counts, optionally within a manual date range (?from=&to=, ISO dates).
 export async function handler(event) {
@@ -9,7 +9,7 @@ export async function handler(event) {
       `SELECT to_char(date_trunc('month', time_eat), 'YYYY-MM') AS period,
               count(*)::int AS count
          FROM history
-        WHERE activity_type='watched'
+        WHERE ${VIDEO_FILTER}
           AND ($1::date IS NULL OR time_eat >= $1::date)
           AND ($2::date IS NULL OR time_eat <  ($2::date + INTERVAL '1 day'))
         GROUP BY 1

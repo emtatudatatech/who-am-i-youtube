@@ -32,6 +32,7 @@ COLUMNS = [
     "channel_country",
     "is_short",
     "video_duration_seconds",
+    "content_type",
 ]
 
 # Video/channel insights filter to this set of activity types (see plan / Section 8.4).
@@ -84,6 +85,33 @@ def is_short(title: str | None) -> bool:
     return bool(title) and "#shorts" in title.lower()
 
 
+def classify_content_type(entry: dict) -> str:
+    """Classify what kind of thing an activity entry is, mutually exclusive.
+
+    Priority ad > post > short > video > other:
+      - 'ad'    : Takeout tags it with details [{"name": "From Google Ads"}]
+                  (an ad is an ad even if it's also a Short).
+      - 'post'  : a YouTube community post (titleUrl has /post/).
+      - 'short' : '#shorts' in title or a /shorts/ URL.
+      - 'video' : an ordinary long-form video (a /watch?v= URL).
+      - 'other' : searches, channel visits, playlists, etc.
+
+    Aggregation insights count 'video' only; 'ad'/'short'/'post' are surfaced
+    as their own metrics so ads never leak into top videos/channels.
+    """
+    if any((d.get("name") == "From Google Ads") for d in (entry.get("details") or [])):
+        return "ad"
+    url = entry.get("titleUrl") or ""
+    if "/post/" in url:
+        return "post"
+    title = entry.get("title") or ""
+    if "#shorts" in title.lower() or "/shorts/" in url:
+        return "short"
+    if "/watch" in url and "v=" in url:
+        return "video"
+    return "other"
+
+
 def iso8601_duration_to_seconds(duration: str | None) -> int | None:
     """Parse an ISO-8601 duration (e.g. 'PT1H2M3S', 'PT45S', 'P0D') to seconds."""
     if not duration:
@@ -132,4 +160,5 @@ def record_to_row(entry: dict) -> tuple:
         entry.get("channelCountry"),
         is_short(title),
         iso8601_duration_to_seconds(entry.get("videoDuration")),
+        classify_content_type(entry),
     )
