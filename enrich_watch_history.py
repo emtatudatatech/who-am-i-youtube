@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -25,8 +26,8 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 API_KEY = os.getenv("YOUTUBE_API_KEY")
-INPUT_FILE = "datasets/MyActivity.json"
-OUTPUT_FILE = "datasets/MyActivity_enriched.json"
+DEFAULT_INPUT_FILE = "datasets/MyActivity.json"
+DEFAULT_OUTPUT_FILE = "datasets/MyActivity_enriched.json"
 
 # ==============================================================================
 # HELPER FUNCTIONS
@@ -46,13 +47,13 @@ def batch_list(items: List, size: int = 50):
 # ==============================================================================
 # MAIN PROCESSING
 # ==============================================================================
-def main():
+def main(input_file: str = DEFAULT_INPUT_FILE, output_file: str = DEFAULT_OUTPUT_FILE):
     if not API_KEY:
         logger.error("Error: Please set the YOUTUBE_API_KEY environment variable.")
         return
 
-    logger.info("Loading local MyActivity.json file...")
-    with open(INPUT_FILE, "r", encoding="utf-8") as f:
+    logger.info("Loading %s ...", input_file)
+    with open(input_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     youtube = build("youtube", "v3", developerKey=API_KEY)
@@ -91,14 +92,14 @@ def main():
     for chunk in batch_list(unique_video_ids, 50):
         try:
             response = youtube.videos().list(
-                part="snippet",
+                part="snippet,contentDetails",
                 id=",".join(chunk)
             ).execute()
 
             for item in response.get("items", []):
                 vid_id = item["id"]
                 snippet = item["snippet"]
-                
+
                 # Extract best available thumbnail URL
                 thumbnails = snippet.get("thumbnails", {})
                 best_thumb = (
@@ -112,10 +113,14 @@ def main():
                 if channel_id:
                     channel_ids_to_fetch.add(channel_id)
 
+                # ISO-8601 duration string, e.g. "PT10M32S" (parsed to seconds at load time)
+                duration = item.get("contentDetails", {}).get("duration")
+
                 video_metadata[vid_id] = {
                     "categoryId": snippet.get("categoryId"),
                     "videoThumbnailUrl": best_thumb,
-                    "channelId": channel_id
+                    "channelId": channel_id,
+                    "videoDuration": duration
                 }
         except HttpError as e:
             logger.warning(f"   API Error during video fetch: {e}")
@@ -180,13 +185,18 @@ def main():
             entry["channelId"] = c_id
             entry["channelImageUrl"] = c_info.get("channelImageUrl")
             entry["channelCountry"] = c_info.get("channelCountry")
+            entry["videoDuration"] = v_info.get("videoDuration")
             enriched_count += 1
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
     logger.info(f"Finished! Successfully enriched {enriched_count} records.")
-    logger.info(f"File saved as: {OUTPUT_FILE}")
+    logger.info(f"File saved as: {output_file}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Enrich a Google Takeout MyActivity.json export with YouTube metadata.")
+    parser.add_argument("--input", default=DEFAULT_INPUT_FILE, help="Path to raw MyActivity.json")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT_FILE, help="Path to write enriched JSON")
+    args = parser.parse_args()
+    main(args.input, args.output)

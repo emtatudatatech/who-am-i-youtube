@@ -166,6 +166,21 @@ datasets/
 
 # Configurations
 .env
+.env.local
+.env.*
+!.env.example
+
+# Credentials
+credentials*.json
+client_secret*.json
+*.pem
+
+# Node / frontend
+node_modules/
+dist/
+
+# OS
+.DS_Store
 
 # Notebooks
 *.ipynb
