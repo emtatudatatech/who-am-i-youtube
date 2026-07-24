@@ -1,0 +1,154 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  /* soft brand aura behind the frosted glass */
+  background-image:
+    radial-gradient(1100px 600px at 12% -10%, rgba(230, 51, 41, 0.16), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(42, 120, 214, 0.12), transparent 55%);
+  background-attachment: fixed;
+}
+
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+  font-feature-settings: "liga";
+  user-select: none;
+}
+
+/* ---- Layout ---- */
+.app { max-width: 1180px; margin: 0 auto; padding: 0 20px 80px; }
+
+.masthead {
+  display: flex; align-items: center; gap: 14px;
+  padding: 26px 4px 8px;
+}
+.masthead .logo {
+  display: grid; place-items: center;
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--yt-red); color: #fff;
+}
+.masthead h1 { font-size: 1.35rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+.masthead .sub { color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px; }
+.masthead .spacer { flex: 1; }
+
+/* ---- Ribbon ---- */
+.ribbon {
+  position: sticky; top: 0; z-index: 20;
+  margin: 8px 0 18px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 16px;
+  font-size: 0.85rem; color: var(--text-secondary);
+}
+.ribbon b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ribbon .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--yt-red); }
+
+/* ---- Glass panel ---- */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+.panel { padding: 18px 18px 16px; }
+.panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.panel-head .material-symbols-rounded { color: var(--yt-red); font-size: 22px; }
+.panel-head h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+.panel-note { color: var(--text-muted); font-size: 0.75rem; margin: 2px 0 12px; }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 15px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary); font-size: 0.86rem; font-weight: 600;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active { background: var(--yt-red); color: #fff; border-color: transparent; }
+.tab .material-symbols-rounded { font-size: 19px; }
+
+/* ---- Grid ----
+   minmax(0, 1fr) (not bare 1fr) so tracks can shrink below their content's
+   min size — required for responsive charts inside grid cells not to blow out
+   the page width. Grid children also get min-width:0 for the same reason. */
+.grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.grid > * { min-width: 0; }
+.grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.span-2 { grid-column: span 2; }
+@media (max-width: 860px) {
+  .grid.cols-2, .grid.cols-3, .grid.cols-4 { grid-template-columns: minmax(0, 1fr); }
+  .span-2 { grid-column: span 1; }
+}
+
+/* ---- Stat card ---- */
+.stat .material-symbols-rounded { font-size: 26px; color: var(--yt-red); }
+.stat .value { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+.stat .label { color: var(--text-secondary); font-size: 0.82rem; }
+.stat .foot { color: var(--text-muted); font-size: 0.72rem; margin-top: 6px; }
+
+/* ---- Controls ---- */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip {
+  padding: 5px 11px; border-radius: 999px; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+}
+.chip.active { background: var(--yt-red); color: #fff; border-color: transparent; }
+.icon-btn {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--glass-bg); cursor: pointer; color: var(--text-primary);
+  backdrop-filter: blur(8px);
+}
+
+/* ---- Scrolling channel logo ribbon ---- */
+.logo-ribbon { overflow: hidden; position: relative; padding: 8px 0; }
+.logo-track { display: flex; gap: 26px; width: max-content; animation: scrollLeft 40s linear infinite; }
+.logo-ribbon:hover .logo-track { animation-play-state: paused; }
+.logo-chip { display: flex; align-items: center; gap: 10px; }
+.logo-chip img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); }
+.logo-chip .nm { font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+.logo-chip .ct { font-size: 0.72rem; color: var(--text-muted); }
+@keyframes scrollLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ---- Table ---- */
+.tbl { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.tbl th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 10px; }
+.tbl td { padding: 10px; border-top: 1px solid var(--border); vertical-align: middle; }
+.tbl .rank { color: var(--text-muted); font-variant-numeric: tabular-nums; width: 28px; }
+.tbl .ch { display: flex; align-items: center; gap: 10px; }
+.tbl .ch img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.tbl .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ---- Bar chart race ---- */
+.race-row { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 10px; margin: 7px 0; }
+.race-label { display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.race-label img { width: 26px; height: 26px; border-radius: 50%; }
+.race-bar-wrap { position: relative; }
+.race-bar { height: 26px; border-radius: 0 6px 6px 0; background: var(--yt-red); transition: width 0.28s linear; display: flex; align-items: center; }
+.race-bar span { margin-left: auto; padding: 0 8px; color: #fff; font-size: 0.76rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.race-year { font-size: 2.6rem; font-weight: 800; text-align: right; color: var(--text-muted); letter-spacing: -0.02em; }
+
+/* ---- Heatmap ---- */
+.heat { display: grid; gap: 2px; }
+.heat-cell { aspect-ratio: 1; border-radius: 3px; }
+.heat-axis { font-size: 0.66rem; color: var(--text-muted); text-align: center; }
+
+/* ---- Misc ---- */
+.loading, .empty { color: var(--text-muted); font-size: 0.85rem; padding: 24px; text-align: center; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.76rem; color: var(--text-secondary); margin-top: 8px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--yt-red) 14%, transparent); color: var(--yt-red); font-size: 0.72rem; font-weight: 700; }
+a.reset { color: var(--series-1); cursor: pointer; font-size: 0.78rem; font-weight: 600; }
+.footer-note { color: var(--text-muted); font-size: 0.74rem; text-align: center; margin-top: 40px; line-height: 1.6; }
