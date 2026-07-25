@@ -10,6 +10,7 @@ const cases = [
   ["time-patterns", {}],
   ["content-mix", {}],
   ["african-creators", {}],
+  ["african-channels", { country: "KE" }],
   ["top-categories", { year: "2023" }],
   ["category-videos", { category: "17", year: "2023" }],
   ["avg-watch-time", {}],

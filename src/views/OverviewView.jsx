@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell,
@@ -62,8 +62,42 @@ function ContentMix({ colors }) {
   );
 }
 
+// ISO alpha-2 → flag emoji (regional-indicator letters). Falls back to "" if unusable.
+function flagEmoji(code) {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
+function AfricanChannels({ country }) {
+  const { data, loading } = useApi("african-channels", { country });
+  if (loading) return <div className="loading" style={{ padding: 12 }}>Loading channels…</div>;
+  if (!data?.length) return <Empty label="No channels for this country" />;
+  const max = Math.max(...data.map((d) => d.count), 1);
+  return (
+    <div style={{ marginTop: 6 }}>
+      {data.map((c, i) => (
+        <div key={c.channel_id} className="race-row" style={{ gridTemplateColumns: "20px 34px 130px 1fr" }}>
+          <span className="rank">{i + 1}</span>
+          <img src={c.channel_image_url} alt="" width={28} height={28} style={{ borderRadius: "50%" }} referrerPolicy="no-referrer" />
+          <div className="race-label" style={{ justifyContent: "flex-start" }}>{c.channel_name}</div>
+          <div className="race-bar-wrap">
+            <div className="race-bar" style={{ width: `${(c.count / max) * 100}%`, background: "var(--series-3)", height: 22 }}>
+              <span>{fmt(c.count)}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function African() {
   const { data, loading } = useApi("african-creators");
+  const [country, setCountry] = useState(null);
+  useEffect(() => {
+    if (data?.topCountries?.length && !country) setCountry(data.topCountries[0].channel_country);
+  }, [data, country]);
+
   if (loading) return <Loading />;
   if (!data) return <Empty />;
   const pctOfKnown = (data.african / data.withCountry) * 100;
@@ -77,12 +111,27 @@ function African() {
       <p className="panel-note" style={{ marginTop: 10 }}>
         {pctOfKnown.toFixed(1)}% of the {fmt(data.withCountry)} watched videos whose channel reports a country.
         {" "}{nullPct.toFixed(0)}% of watched videos have no channel country and are excluded.
+        {" "}Pick a country to see its top channels.
       </p>
-      <div className="legend">
-        {data.topCountries.slice(0, 6).map((c) => (
-          <span key={c.channel_country}><b>{c.channel_country}</b> {fmt(c.count)}</span>
+      <div className="chips">
+        {data.topCountries.map((c) => (
+          <button
+            key={c.channel_country}
+            className={`chip ${country === c.channel_country ? "active" : ""}`}
+            onClick={() => setCountry(c.channel_country)}
+          >
+            {flagEmoji(c.channel_country)} {c.channel_country} <span style={{ opacity: 0.7 }}>{fmt(c.count)}</span>
+          </button>
         ))}
       </div>
+      {country && (
+        <>
+          <p className="panel-note" style={{ margin: "4px 0 2px" }}>
+            Top channels in <b style={{ color: "var(--text-primary)" }}>{flagEmoji(country)} {country}</b>
+          </p>
+          <AfricanChannels country={country} />
+        </>
+      )}
     </div>
   );
 }
