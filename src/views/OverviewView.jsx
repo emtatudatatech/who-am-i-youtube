@@ -136,22 +136,26 @@ function African() {
   );
 }
 
-function TrendArea({ colors }) {
-  const [range, setRange] = useState({ from: "", to: "" });
+function TrendArea({ colors, minTime, maxTime }) {
+  // Default the pickers to the full span of the data (its min/max dates).
+  const defFrom = (minTime || "").slice(0, 10);
+  const defTo = (maxTime || "").slice(0, 10);
+  const [range, setRange] = useState({ from: defFrom, to: defTo });
   const params = {};
   if (range.from) params.from = range.from;
   if (range.to) params.to = range.to;
   const { data, loading } = useApi("watch-trend", params);
+  const changed = range.from !== defFrom || range.to !== defTo;
   return (
     <>
       <div className="chips" style={{ alignItems: "center", gap: 10 }}>
         <label style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-          From <input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
+          From <input type="date" min={defFrom} max={defTo} value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
         </label>
         <label style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-          To <input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
+          To <input type="date" min={defFrom} max={defTo} value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
         </label>
-        {(range.from || range.to) && <a className="reset" onClick={() => setRange({ from: "", to: "" })}>Reset</a>}
+        {changed && <a className="reset" onClick={() => setRange({ from: defFrom, to: defTo })}>Reset</a>}
       </div>
       {loading ? <Loading /> : !data?.length ? <Empty /> : (
         <ResponsiveContainer width="100%" height={230}>
@@ -200,7 +204,7 @@ export default function OverviewView({ theme, stats }) {
       </div>
 
       <Panel icon="show_chart" title="Watching trend" note="Videos watched per month (EAT). Use the date pickers to slice a range.">
-        <TrendArea colors={colors} />
+        <TrendArea colors={colors} minTime={stats.minTime} maxTime={stats.maxTime} />
       </Panel>
     </div>
   );
