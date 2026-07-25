@@ -12,7 +12,7 @@ const cases = [
   ["african-creators", {}],
   ["african-channels", { country: "KE" }],
   ["top-categories", { year: "2023" }],
-  ["category-videos", { category: "17", year: "2023" }],
+  ["category-channels", { category: "17", year: "2023" }],
   ["avg-watch-time", {}],
   ["avg-watch-time", { year: "2023" }],
   ["videos-per-day", {}],
