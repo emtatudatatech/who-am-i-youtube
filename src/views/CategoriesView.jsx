@@ -6,36 +6,31 @@ import { Panel, Chips, Loading, Empty } from "../components/primitives.jsx";
 import { ChartTooltip } from "../components/ChartTooltip.jsx";
 import { useApi } from "../lib/api.js";
 import { useChartColors, SERIES } from "../lib/chartTheme.js";
-import { fmt, stripVerb } from "../lib/format.js";
+import { fmt } from "../lib/format.js";
 
-function Drilldown({ category, categoryName, year, colors }) {
+function Drilldown({ category, categoryName, year }) {
   const params = { category };
   if (year) params.year = year;
-  const { data, loading } = useApi("category-videos", params);
+  const { data, loading } = useApi("category-channels", params);
   if (loading) return <Loading />;
-  if (!data?.length) return <Empty label="No videos" />;
+  if (!data?.length) return <Empty label="No channels" />;
   return (
     <div>
       <p className="panel-note" style={{ marginTop: 0 }}>
-        Top videos in <b style={{ color: "var(--text-primary)" }}>{categoryName}</b>{year ? ` · ${year}` : " · all-time"}
+        Top channels in <b style={{ color: "var(--text-primary)" }}>{categoryName}</b>{year ? ` · ${year}` : " · all-time"}
       </p>
       <table className="tbl">
         <tbody>
-          {data.map((v, i) => (
-            <tr key={i}>
+          {data.map((c, i) => (
+            <tr key={c.channel_id}>
               <td className="rank">{i + 1}</td>
               <td>
                 <div className="ch">
-                  {v.video_thumbnail_url && <img src={v.video_thumbnail_url} alt="" style={{ width: 54, height: 30, borderRadius: 6, objectFit: "cover" }} referrerPolicy="no-referrer" />}
-                  <div>
-                    <a href={v.title_url} target="_blank" rel="noreferrer" style={{ color: "var(--text-primary)", textDecoration: "none", fontWeight: 600 }}>
-                      {stripVerb(v.title)}
-                    </a>
-                    <div style={{ color: "var(--text-muted)", fontSize: "0.74rem" }}>{v.channel_name}</div>
-                  </div>
+                  <img src={c.channel_image_url} alt="" referrerPolicy="no-referrer" />
+                  <span style={{ fontWeight: 600 }}>{c.channel_name}</span>
                 </div>
               </td>
-              <td className="num">{fmt(v.count)}×</td>
+              <td className="num">{fmt(c.count)}</td>
             </tr>
           ))}
         </tbody>
@@ -75,7 +70,7 @@ export default function CategoriesView({ theme, stats }) {
 
       {selected && (
         <Panel icon="playlist_play" title="Category drill-down" right={<a className="reset" onClick={() => setSelected(null)}>Close</a>}>
-          <Drilldown category={selected.id} categoryName={selected.name} year={year} colors={colors} />
+          <Drilldown category={selected.id} categoryName={selected.name} year={year} />
         </Panel>
       )}
     </div>

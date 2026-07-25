@@ -1,4 +1,4 @@
-import { sql, ok, fail, yearParam } from "./_shared/db.js";
+import { sql, ok, fail, yearParam, VIDEO_FILTER } from "./_shared/db.js";
 
 // Watch-time metrics from video_duration_seconds (real durations, added via enrichment).
 // No ?year: group by year. ?year=YYYY: drill down to months within that year.
@@ -15,7 +15,7 @@ export async function handler(event) {
                 avg(video_duration_seconds)::numeric(10,1)     AS avg_seconds,
                 count(*)::int                                  AS videos
            FROM history
-          WHERE activity_type='watched'
+          WHERE ${VIDEO_FILTER}
             AND video_duration_seconds IS NOT NULL
             AND ($1::int IS NULL OR EXTRACT(YEAR FROM time_eat) = $1)
           GROUP BY 1 ORDER BY 1`,
@@ -25,7 +25,7 @@ export async function handler(event) {
         `SELECT
            count(*) FILTER (WHERE video_duration_seconds IS NOT NULL) AS with_duration,
            count(*)                                                   AS total_watched
-         FROM history WHERE activity_type='watched'`
+         FROM history WHERE ${VIDEO_FILTER}`
       ),
     ]);
 

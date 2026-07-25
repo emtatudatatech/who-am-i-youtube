@@ -36,6 +36,12 @@ export function shortDate(iso) {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
+// ISO alpha-2 → flag emoji (regional-indicator letters). "" if unusable.
+export function flagEmoji(code) {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
 export function hourLabel(h) {
   const ampm = h < 12 ? "am" : "pm";
   const hr = h % 12 === 0 ? 12 : h % 12;

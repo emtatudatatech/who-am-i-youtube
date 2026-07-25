@@ -1,16 +1,15 @@
 import { sql, ok, fail, VIDEO_FILTER } from "./_shared/db.js";
 
-// "Watch of Fame": top 10 all-time channels with name, primary category,
-// video count, and a monthly watch-count series for an inline sparkline.
+// "Sing Song": top 10 all-time Music-category channels (YouTube category 10),
+// with channel country, video count, and a monthly sparkline of music watches.
 export async function handler() {
   try {
     const top = await sql.query(
       `SELECT h.channel_id, h.channel_name, h.channel_image_url,
-              count(*)::int AS count,
-              mode() WITHIN GROUP (ORDER BY vc.category_name) AS primary_category
+              max(h.channel_country) AS channel_country,
+              count(*)::int AS count
          FROM history h
-         LEFT JOIN video_categories vc ON h.category_id = vc.category_id
-        WHERE ${VIDEO_FILTER} AND h.channel_id IS NOT NULL
+        WHERE ${VIDEO_FILTER} AND h.category_id = '10' AND h.channel_id IS NOT NULL
         GROUP BY h.channel_id, h.channel_name, h.channel_image_url
         ORDER BY count DESC
         LIMIT 10`
@@ -23,7 +22,7 @@ export async function handler() {
                   to_char(date_trunc('month', time_eat), 'YYYY-MM') AS period,
                   count(*)::int AS count
              FROM history
-            WHERE ${VIDEO_FILTER} AND channel_id = ANY($1)
+            WHERE ${VIDEO_FILTER} AND category_id = '10' AND channel_id = ANY($1)
             GROUP BY 1, 2 ORDER BY 1, 2`,
           [ids]
         )
@@ -39,7 +38,7 @@ export async function handler() {
         channelId: r.channel_id,
         channelName: r.channel_name,
         channelImageUrl: r.channel_image_url,
-        primaryCategory: r.primary_category || "Uncategorized",
+        channelCountry: r.channel_country,
         count: r.count,
         sparkline: byChannel[r.channel_id] || [],
       }))

@@ -4,6 +4,11 @@ import { neon } from "@neondatabase/serverless";
 // DATABASE_URL comes from Netlify environment variables only (never shipped to the browser).
 export const sql = neon(process.env.DATABASE_URL);
 
+// The universe for every video/channel aggregation: actual long-form videos the
+// user watched — excludes ads, Shorts, community posts, and non-watch verbs.
+// A hardcoded constant (no user input), safe to interpolate into query text.
+export const VIDEO_FILTER = "activity_type = 'watched' AND content_type = 'video'";
+
 export function ok(data) {
   return {
     statusCode: 200,

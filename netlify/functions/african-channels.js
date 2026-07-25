@@ -1,19 +1,20 @@
-import { sql, ok, fail, yearParam, VIDEO_FILTER } from "./_shared/db.js";
+import { sql, ok, fail, VIDEO_FILTER } from "./_shared/db.js";
 
-// Top 5 channels by watched count. ?year=YYYY (or omit / 'all' for all-time).
+// Top 5 channels (by videos watched) for a given channel_country. ?country=KE
 export async function handler(event) {
   try {
-    const year = yearParam(event);
+    const country = event.queryStringParameters?.country;
+    if (!country) return ok([]);
     const rows = await sql.query(
       `SELECT channel_id, channel_name, channel_image_url, count(*)::int AS count
          FROM history
         WHERE ${VIDEO_FILTER}
+          AND channel_country = $1
           AND channel_id IS NOT NULL
-          AND ($1::int IS NULL OR EXTRACT(YEAR FROM time_eat) = $1)
         GROUP BY channel_id, channel_name, channel_image_url
         ORDER BY count DESC
         LIMIT 5`,
-      [year]
+      [country]
     );
     return ok(rows);
   } catch (e) {

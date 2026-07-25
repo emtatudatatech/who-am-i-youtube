@@ -1,4 +1,4 @@
-import { sql, ok, fail, yearParam } from "./_shared/db.js";
+import { sql, ok, fail, yearParam, VIDEO_FILTER } from "./_shared/db.js";
 
 // Top 5 watched categories. ?year=YYYY (or omit / 'all'). Joins video_categories.
 export async function handler(event) {
@@ -10,7 +10,7 @@ export async function handler(event) {
               count(*)::int AS count
          FROM history h
          LEFT JOIN video_categories vc ON h.category_id = vc.category_id
-        WHERE h.activity_type='watched'
+        WHERE ${VIDEO_FILTER}
           AND h.category_id IS NOT NULL
           AND ($1::int IS NULL OR EXTRACT(YEAR FROM h.time_eat) = $1)
         GROUP BY h.category_id, vc.category_name

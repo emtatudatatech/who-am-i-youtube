@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell,
@@ -7,7 +7,7 @@ import { Panel, StatCard, Loading, Empty } from "../components/primitives.jsx";
 import { ChartTooltip } from "../components/ChartTooltip.jsx";
 import { useApi } from "../lib/api.js";
 import { useChartColors } from "../lib/chartTheme.js";
-import { fmt, fmt1 } from "../lib/format.js";
+import { fmt, fmt1, flagEmoji } from "../lib/format.js";
 
 function ChannelRibbon() {
   const { data } = useApi("watch-of-fame");
@@ -30,37 +30,68 @@ function ChannelRibbon() {
   );
 }
 
-function ShortsSplit({ colors }) {
-  const { data, loading } = useApi("videos-vs-shorts");
+function ContentMix({ colors }) {
+  const { data, loading } = useApi("content-mix");
   if (loading) return <Loading />;
   if (!data) return <Empty />;
-  const total = data.videos + data.shorts;
-  const pie = [
-    { name: "Long-form", value: data.videos, fill: colors.s1 },
+  const parts = [
+    { name: "Videos", value: data.videos, fill: colors.s1 },
     { name: "Shorts", value: data.shorts, fill: colors.red },
+    { name: "Ads", value: data.ads, fill: colors.s4 },
+    { name: "Posts", value: data.posts, fill: colors.s3 },
   ];
+  const total = parts.reduce((s, p) => s + p.value, 0) || 1;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <ResponsiveContainer width="55%" height={190}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <ResponsiveContainer width="48%" height={200}>
         <PieChart>
-          <Pie data={pie} dataKey="value" innerRadius={52} outerRadius={80} paddingAngle={2} stroke="var(--surface-1)" strokeWidth={2}>
-            {pie.map((p, i) => <Cell key={i} fill={p.fill} />)}
+          <Pie data={parts} dataKey="value" innerRadius={52} outerRadius={82} paddingAngle={2} stroke="var(--surface-1)" strokeWidth={2}>
+            {parts.map((p, i) => <Cell key={i} fill={p.fill} />)}
           </Pie>
           <Tooltip content={<ChartTooltip valueFormatter={fmt} />} />
         </PieChart>
       </ResponsiveContainer>
-      <div>
-        <div className="legend" style={{ flexDirection: "column", gap: 8 }}>
-          <div><i style={{ background: colors.s1 }} /><b>{fmt(data.videos)}</b> long-form ({((data.videos / total) * 100).toFixed(1)}%)</div>
-          <div><i style={{ background: colors.red }} /><b>{fmt(data.shorts)}</b> Shorts ({((data.shorts / total) * 100).toFixed(1)}%)</div>
-        </div>
+      <div className="legend" style={{ flexDirection: "column", gap: 8 }}>
+        {parts.map((p) => (
+          <div key={p.name}>
+            <i style={{ background: p.fill }} /><b>{fmt(p.value)}</b> {p.name} ({((p.value / total) * 100).toFixed(1)}%)
+          </div>
+        ))}
       </div>
+    </div>
+  );
+}
+
+function AfricanChannels({ country }) {
+  const { data, loading } = useApi("african-channels", { country });
+  if (loading) return <div className="loading" style={{ padding: 12 }}>Loading channels…</div>;
+  if (!data?.length) return <Empty label="No channels for this country" />;
+  const max = Math.max(...data.map((d) => d.count), 1);
+  return (
+    <div style={{ marginTop: 6 }}>
+      {data.map((c, i) => (
+        <div key={c.channel_id} className="race-row" style={{ gridTemplateColumns: "20px 34px 130px 1fr" }}>
+          <span className="rank">{i + 1}</span>
+          <img src={c.channel_image_url} alt="" width={28} height={28} style={{ borderRadius: "50%" }} referrerPolicy="no-referrer" />
+          <div className="race-label" style={{ justifyContent: "flex-start" }}>{c.channel_name}</div>
+          <div className="race-bar-wrap">
+            <div className="race-bar" style={{ width: `${(c.count / max) * 100}%`, background: "var(--series-3)", height: 22 }}>
+              <span>{fmt(c.count)}</span>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
 function African() {
   const { data, loading } = useApi("african-creators");
+  const [country, setCountry] = useState(null);
+  useEffect(() => {
+    if (data?.topCountries?.length && !country) setCountry(data.topCountries[0].channel_country);
+  }, [data, country]);
+
   if (loading) return <Loading />;
   if (!data) return <Empty />;
   const pctOfKnown = (data.african / data.withCountry) * 100;
@@ -74,32 +105,51 @@ function African() {
       <p className="panel-note" style={{ marginTop: 10 }}>
         {pctOfKnown.toFixed(1)}% of the {fmt(data.withCountry)} watched videos whose channel reports a country.
         {" "}{nullPct.toFixed(0)}% of watched videos have no channel country and are excluded.
+        {" "}Pick a country to see its top channels.
       </p>
-      <div className="legend">
-        {data.topCountries.slice(0, 6).map((c) => (
-          <span key={c.channel_country}><b>{c.channel_country}</b> {fmt(c.count)}</span>
+      <div className="chips">
+        {data.topCountries.map((c) => (
+          <button
+            key={c.channel_country}
+            className={`chip ${country === c.channel_country ? "active" : ""}`}
+            onClick={() => setCountry(c.channel_country)}
+          >
+            {flagEmoji(c.channel_country)} {c.channel_country} <span style={{ opacity: 0.7 }}>{fmt(c.count)}</span>
+          </button>
         ))}
       </div>
+      {country && (
+        <>
+          <p className="panel-note" style={{ margin: "4px 0 2px" }}>
+            Top channels in <b style={{ color: "var(--text-primary)" }}>{flagEmoji(country)} {country}</b>
+          </p>
+          <AfricanChannels country={country} />
+        </>
+      )}
     </div>
   );
 }
 
-function TrendArea({ colors }) {
-  const [range, setRange] = useState({ from: "", to: "" });
+function TrendArea({ colors, minTime, maxTime }) {
+  // Default the pickers to the full span of the data (its min/max dates).
+  const defFrom = (minTime || "").slice(0, 10);
+  const defTo = (maxTime || "").slice(0, 10);
+  const [range, setRange] = useState({ from: defFrom, to: defTo });
   const params = {};
   if (range.from) params.from = range.from;
   if (range.to) params.to = range.to;
   const { data, loading } = useApi("watch-trend", params);
+  const changed = range.from !== defFrom || range.to !== defTo;
   return (
     <>
       <div className="chips" style={{ alignItems: "center", gap: 10 }}>
         <label style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-          From <input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
+          From <input type="date" min={defFrom} max={defTo} value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
         </label>
         <label style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-          To <input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
+          To <input type="date" min={defFrom} max={defTo} value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
         </label>
-        {(range.from || range.to) && <a className="reset" onClick={() => setRange({ from: "", to: "" })}>Reset</a>}
+        {changed && <a className="reset" onClick={() => setRange({ from: defFrom, to: defTo })}>Reset</a>}
       </div>
       {loading ? <Loading /> : !data?.length ? <Empty /> : (
         <ResponsiveContainer width="100%" height={230}>
@@ -128,10 +178,10 @@ export default function OverviewView({ theme, stats }) {
   return (
     <div className="grid" style={{ gap: 16 }}>
       <div className="grid cols-4">
-        <StatCard icon="play_circle" value={fmt(stats.totalWatched)} label="Videos watched" />
+        <StatCard icon="play_circle" value={fmt(stats.videos)} label="Videos watched" foot="Actual videos — excludes ads & Shorts" />
         <StatCard icon="groups" value={fmt(stats.uniqueChannels)} label="Unique channels" />
         <StatCard icon="calendar_today" value={fmt1(stats.avgPerDay)} label="Avg videos / active day" />
-        <StatCard icon="search" value={fmt(stats.totalSearches)} label="Searches made" />
+        <StatCard icon="search" value={fmt(stats.searches)} label="Searches made" />
       </div>
 
       <Panel icon="stream" title="Channels on rotation" note="Your most-watched channels, all-time — hover to pause.">
@@ -139,8 +189,8 @@ export default function OverviewView({ theme, stats }) {
       </Panel>
 
       <div className="grid cols-2">
-        <Panel icon="movie" title="Videos vs. Shorts" note="Shorts detected from the #shorts title tag (untagged Shorts are missed).">
-          <ShortsSplit colors={colors} />
+        <Panel icon="donut_large" title="Content mix" note="Actual videos vs. Shorts, ads (Takeout's “From Google Ads”) and community posts. Ads & posts are kept out of every other chart.">
+          <ContentMix colors={colors} />
         </Panel>
         <Panel icon="public" title="African creators" note="Based on the channel's self-reported YouTube country.">
           <African />
@@ -148,7 +198,7 @@ export default function OverviewView({ theme, stats }) {
       </div>
 
       <Panel icon="show_chart" title="Watching trend" note="Videos watched per month (EAT). Use the date pickers to slice a range.">
-        <TrendArea colors={colors} />
+        <TrendArea colors={colors} minTime={stats.minTime} maxTime={stats.maxTime} />
       </Panel>
     </div>
   );

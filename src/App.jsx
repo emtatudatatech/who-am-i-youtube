@@ -8,6 +8,7 @@ import ChannelsView from "./views/ChannelsView.jsx";
 import CategoriesView from "./views/CategoriesView.jsx";
 import PatternsView from "./views/PatternsView.jsx";
 import WatchOfFameView from "./views/WatchOfFameView.jsx";
+import SingSongView from "./views/SingSongView.jsx";
 import WatchTrendView from "./views/WatchTrendView.jsx";
 
 const TABS = [
@@ -16,10 +17,11 @@ const TABS = [
   { id: "categories", label: "Categories", icon: "category" },
   { id: "patterns", label: "Patterns", icon: "schedule" },
   { id: "fame", label: "Watch of Fame", icon: "trophy" },
+  { id: "singsong", label: "Sing Song", icon: "music_note" },
   { id: "trend", label: "Watch Trend", icon: "trending_up" },
 ];
 
-const TAB_IDS = new Set(["overview", "channels", "categories", "patterns", "fame", "trend"]);
+const TAB_IDS = new Set(["overview", "channels", "categories", "patterns", "fame", "singsong", "trend"]);
 
 export default function App() {
   const { theme, toggle } = useTheme();
@@ -60,7 +62,7 @@ export default function App() {
         {stats && (
           <>
             <span style={{ marginLeft: "auto" }} />
-            <b>{stats.totalWatched.toLocaleString()}</b>
+            <b>{stats.videos.toLocaleString()}</b>
             <span>videos watched</span>
           </>
         )}
@@ -84,14 +86,16 @@ export default function App() {
           {tab === "categories" && <CategoriesView {...view} />}
           {tab === "patterns" && <PatternsView {...view} />}
           {tab === "fame" && <WatchOfFameView {...view} />}
+          {tab === "singsong" && <SingSongView {...view} />}
           {tab === "trend" && <WatchTrendView {...view} />}
         </>
       )}
 
       <p className="footer-note">
         Built from a Google Takeout “My Activity” export, enriched via the YouTube Data API and stored on Neon Postgres.
-        All time-of-day / day / month insights use East Africa Time (UTC+3). “African creator” counts use the channel’s
-        self-reported YouTube country. Shorts are detected from the <code>#shorts</code> title tag (a Short without the tag is missed).
+        All time-of-day / day / month insights use East Africa Time (UTC+3). Every video/channel chart counts actual videos
+        only — ads (Takeout’s <code>From Google Ads</code>), Shorts (<code>#shorts</code> tag) and community posts are tracked
+        separately and never mixed in. “African creator” counts use the channel’s self-reported YouTube country.
       </p>
     </div>
   );
