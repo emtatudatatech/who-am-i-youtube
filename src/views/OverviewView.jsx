@@ -7,7 +7,7 @@ import { Panel, StatCard, Loading, Empty } from "../components/primitives.jsx";
 import { ChartTooltip } from "../components/ChartTooltip.jsx";
 import { useApi } from "../lib/api.js";
 import { useChartColors } from "../lib/chartTheme.js";
-import { fmt, fmt1 } from "../lib/format.js";
+import { fmt, fmt1, flagEmoji } from "../lib/format.js";
 
 function ChannelRibbon() {
   const { data } = useApi("watch-of-fame");
@@ -60,12 +60,6 @@ function ContentMix({ colors }) {
       </div>
     </div>
   );
-}
-
-// ISO alpha-2 → flag emoji (regional-indicator letters). Falls back to "" if unusable.
-function flagEmoji(code) {
-  if (!code || code.length !== 2) return "";
-  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
 
 function AfricanChannels({ country }) {

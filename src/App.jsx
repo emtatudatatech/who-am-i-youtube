@@ -8,6 +8,7 @@ import ChannelsView from "./views/ChannelsView.jsx";
 import CategoriesView from "./views/CategoriesView.jsx";
 import PatternsView from "./views/PatternsView.jsx";
 import WatchOfFameView from "./views/WatchOfFameView.jsx";
+import SingSongView from "./views/SingSongView.jsx";
 import WatchTrendView from "./views/WatchTrendView.jsx";
 
 const TABS = [
@@ -16,10 +17,11 @@ const TABS = [
   { id: "categories", label: "Categories", icon: "category" },
   { id: "patterns", label: "Patterns", icon: "schedule" },
   { id: "fame", label: "Watch of Fame", icon: "trophy" },
+  { id: "singsong", label: "Sing Song", icon: "music_note" },
   { id: "trend", label: "Watch Trend", icon: "trending_up" },
 ];
 
-const TAB_IDS = new Set(["overview", "channels", "categories", "patterns", "fame", "trend"]);
+const TAB_IDS = new Set(["overview", "channels", "categories", "patterns", "fame", "singsong", "trend"]);
 
 export default function App() {
   const { theme, toggle } = useTheme();
@@ -84,6 +86,7 @@ export default function App() {
           {tab === "categories" && <CategoriesView {...view} />}
           {tab === "patterns" && <PatternsView {...view} />}
           {tab === "fame" && <WatchOfFameView {...view} />}
+          {tab === "singsong" && <SingSongView {...view} />}
           {tab === "trend" && <WatchTrendView {...view} />}
         </>
       )}

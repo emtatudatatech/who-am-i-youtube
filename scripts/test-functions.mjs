@@ -17,6 +17,8 @@ const cases = [
   ["avg-watch-time", { year: "2023" }],
   ["videos-per-day", {}],
   ["watch-of-fame", {}],
+  ["music-channels", {}],
+  ["music-videos", { channel: "UCba2ts-4Sikp-65nK6qPhiA" }],
   ["watch-trend-tab", {}],
   ["bar-chart-race", {}],
 ];
