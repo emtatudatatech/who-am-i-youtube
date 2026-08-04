@@ -57,10 +57,13 @@ python -m pipelines.load_history        # load datasets/MyActivity_enriched.json
 ### Incremental updates
 When you download a fresh `MyActivity.json` later:
 ```bash
-python -m pipelines.incremental_update path/to/new/MyActivity.json
+python -m pipelines.incremental_update
 ```
 It enriches the new file, loads only entries newer than `pipeline_state.last_synced_time`,
 and is idempotent (dedup via a per-row `activity_hash` — re-running adds no duplicates).
+The above also runs using the default paths defined within the script.
+Ideally, once a new `MyActivity.json` file is updated into the `datasets\` folder,
+then the script will update `datasets/MyActivity_enriched.json` with the latest records.
 
 ## 2. Web app (local)
 ```bash
