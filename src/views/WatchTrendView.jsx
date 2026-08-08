@@ -4,8 +4,8 @@ import {
 } from "recharts";
 import { Panel, Chips, Loading, Empty } from "../components/primitives.jsx";
 import { useApi } from "../lib/api.js";
-import { useChartColors } from "../lib/chartTheme.js";
-import { fmt, fmt1, compact, humanDuration, MONTHS } from "../lib/format.js";
+import { useChartColors, useIsNarrow, xAxisProps, yAxisProps } from "../lib/chartTheme.js";
+import { fmt, fmt1, humanDuration, MONTHS } from "../lib/format.js";
 
 // Tooltip that surfaces the top channel (name + logo) for the hovered month.
 function PeriodTooltip({ active, payload }) {
@@ -34,10 +34,10 @@ function WatchTrendTab({ colors }) {
   if (!data?.length) return <Empty />;
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ left: -16, right: 8, top: 6 }}>
+      <BarChart data={data} margin={{ left: 0, right: 10, top: 6 }}>
         <CartesianGrid stroke={colors.grid} vertical={false} />
-        <XAxis dataKey="period" tick={{ fill: colors.muted, fontSize: 10 }} minTickGap={36} tickLine={false} axisLine={{ stroke: colors.base }} />
-        <YAxis tick={{ fill: colors.muted, fontSize: 11 }} tickLine={false} axisLine={false} width={44} />
+        <XAxis dataKey="period" {...xAxisProps(colors, { fontSize: 10 })} />
+        <YAxis {...yAxisProps(colors)} />
         <Tooltip cursor={{ fill: "var(--gridline)", opacity: 0.4 }} content={<PeriodTooltip />} />
         <Bar dataKey="count" name="Videos" fill={colors.red} radius={[3, 3, 0, 0]} />
       </BarChart>
@@ -47,6 +47,7 @@ function WatchTrendTab({ colors }) {
 
 function AvgWatchTime({ colors, years }) {
   const [year, setYear] = useState(null);
+  const narrow = useIsNarrow();
   const { data, loading } = useApi("avg-watch-time", year ? { year } : {});
   if (loading) return <Loading />;
   if (!data) return <Empty />;
@@ -57,20 +58,22 @@ function AvgWatchTime({ colors, years }) {
     avgMin: p.avgSeconds / 60,
     ...p,
   }));
+  // On a phone, 13 four-digit years won't fit: "'14" keeps every bar labelled
+  // instead of dropping every other one. Tooltips still show the full year.
+  const shortenYear = narrow && !year ? (v) => `’${String(v).slice(2)}` : undefined;
   return (
     <>
       <Chips options={years || []} value={year} onChange={setYear} allLabel="By year" />
       <p className="panel-note" style={{ marginTop: 0 }}>
         Real durations from the YouTube API, available for {coverage.toFixed(0)}% of watched videos.
-        {year ? ` Months of ${year}.` : " Totals per year."}
+        {year ? ` Months of ${year}.` : " Totals per year."} Bars show total hours watched.
       </p>
       {!chartData.length ? <Empty /> : (
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={chartData} margin={{ left: -12, right: 8, top: 6 }}>
+          <BarChart data={chartData} margin={{ left: 0, right: 10, top: 6 }}>
             <CartesianGrid stroke={colors.grid} vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: colors.muted, fontSize: 11 }} interval={0} tickLine={false} axisLine={{ stroke: colors.base }} />
-            <YAxis tickFormatter={compact} tick={{ fill: colors.muted, fontSize: 11 }} tickLine={false} axisLine={false} width={44}
-              label={{ value: "hours", angle: -90, position: "insideLeft", fill: colors.muted, fontSize: 11 }} />
+            <XAxis dataKey="label" {...xAxisProps(colors, { tickFormatter: shortenYear })} />
+            <YAxis {...yAxisProps(colors)} />
             <Tooltip cursor={{ fill: "var(--gridline)", opacity: 0.4 }} content={<DurationTooltip />} />
             <Bar dataKey="hours" name="Watch time" fill={colors.s3} radius={[4, 4, 0, 0]}>
               {chartData.map((d, i) => <Cell key={i} fill={colors.s3} />)}

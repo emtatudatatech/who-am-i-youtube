@@ -6,7 +6,7 @@ import {
 import { Panel, StatCard, Loading, Empty } from "../components/primitives.jsx";
 import { ChartTooltip } from "../components/ChartTooltip.jsx";
 import { useApi } from "../lib/api.js";
-import { useChartColors } from "../lib/chartTheme.js";
+import { useChartColors, xAxisProps, yAxisProps } from "../lib/chartTheme.js";
 import { fmt, fmt1, flagEmoji } from "../lib/format.js";
 
 function ChannelRibbon() {
@@ -153,7 +153,7 @@ function TrendArea({ colors, minTime, maxTime }) {
       </div>
       {loading ? <Loading /> : !data?.length ? <Empty /> : (
         <ResponsiveContainer width="100%" height={230}>
-          <AreaChart data={data} margin={{ left: -18, right: 8, top: 6 }}>
+          <AreaChart data={data} margin={{ left: 0, right: 10, top: 6 }}>
             <defs>
               <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={colors.red} stopOpacity={0.5} />
@@ -161,8 +161,8 @@ function TrendArea({ colors, minTime, maxTime }) {
               </linearGradient>
             </defs>
             <CartesianGrid stroke={colors.grid} vertical={false} />
-            <XAxis dataKey="period" tick={{ fill: colors.muted, fontSize: 11 }} minTickGap={40} tickLine={false} axisLine={{ stroke: colors.base }} />
-            <YAxis tick={{ fill: colors.muted, fontSize: 11 }} tickLine={false} axisLine={false} width={44} />
+            <XAxis dataKey="period" {...xAxisProps(colors)} />
+            <YAxis {...yAxisProps(colors)} />
             <Tooltip content={<ChartTooltip valueFormatter={fmt} />} />
             <Area type="monotone" dataKey="count" name="Videos" stroke={colors.red} strokeWidth={2} fill="url(#trendFill)" />
           </AreaChart>
