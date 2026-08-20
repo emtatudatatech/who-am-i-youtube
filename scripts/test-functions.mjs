@@ -1,24 +1,51 @@
 // Invokes each Netlify function handler directly against the live Neon DB.
 // Usage (from repo root): node scripts/test-functions.mjs
-import "dotenv/config";
+//                          PERSON=wambui node scripts/test-functions.mjs
+import "./env.mjs";
+
+// Call a handler and return its parsed body (or null if it failed).
+async function probe(name, qs = {}) {
+  try {
+    const mod = await import(`../netlify/functions/${name}.js`);
+    const res = await mod.handler({ queryStringParameters: qs });
+    return res.statusCode === 200 ? JSON.parse(res.body) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Parameters are derived from whoever's database is loaded, not hardcoded, so
+// this suite is meaningful for every person — not just the one it was written on.
+const [stats, categories, musicChannels, africa] = await Promise.all([
+  probe("headline-stats"),
+  probe("top-categories"),
+  probe("music-channels"),
+  probe("african-creators"),
+]);
+
+const year = stats?.years?.length ? String(stats.years.at(-1)) : "all";
+const category = categories?.[0]?.category_id ?? "10";
+const channel = musicChannels?.[0]?.channelId ?? "";
+const country = africa?.topCountries?.[0]?.channel_country ?? "KE";
+console.log(`derived params: year=${year} category=${category} country=${country} channel=${channel || "(none)"}`);
 
 const cases = [
   ["headline-stats", {}],
-  ["top-channels", { year: "2023" }],
+  ["top-channels", { year }],
   ["top-channels", {}],
   ["watch-trend", {}],
   ["time-patterns", {}],
   ["content-mix", {}],
   ["african-creators", {}],
-  ["african-channels", { country: "KE" }],
-  ["top-categories", { year: "2023" }],
-  ["category-channels", { category: "17", year: "2023" }],
+  ["african-channels", { country }],
+  ["top-categories", { year }],
+  ["category-channels", { category, year }],
   ["avg-watch-time", {}],
-  ["avg-watch-time", { year: "2023" }],
+  ["avg-watch-time", { year }],
   ["videos-per-day", {}],
   ["watch-of-fame", {}],
   ["music-channels", {}],
-  ["music-videos", { channel: "UCba2ts-4Sikp-65nK6qPhiA" }],
+  ["music-videos", { channel }],
   ["watch-trend-tab", {}],
   ["bar-chart-race", {}],
 ];

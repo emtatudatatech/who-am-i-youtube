@@ -163,7 +163,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Data
+# Data — every person's Takeout export lives in datasets/<person>/
 datasets/
 
 # Configurations
@@ -171,6 +171,10 @@ datasets/
 .env.local
 .env.*
 !.env.example
+
+# Per-person Neon connection strings (people/<person>.env). Templates are kept.
+people/*.env
+!people/*.env.example
 
 # Credentials
 credentials*.json

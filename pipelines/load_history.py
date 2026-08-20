@@ -1,24 +1,28 @@
-"""Initial loader: read datasets/MyActivity_enriched.json into the `history` table.
+"""Initial loader: read datasets/<person>/MyActivity_enriched.json into `history`.
 
 Idempotent (ON CONFLICT (activity_hash) DO NOTHING) and batched. Re-running never
 duplicates rows. Parsing logic lives in pipelines.common.parse so the incremental
 update script reuses it verbatim.
 
 Usage (from repo root):
-    python -m pipelines.load_history [path/to/enriched.json]
+    python -m pipelines.load_history --person emtatu
 """
+import argparse
 import json
 import logging
-import sys
 
 from pipelines.common.db import batch_upsert_history, get_conn, set_pipeline_state
 from pipelines.common.logging_config import setup_logging
 from pipelines.common.parse import record_to_row
+from pipelines.common.person import (
+    add_person_arg,
+    enriched_path,
+    load_person_env,
+    resolve_person,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
-DEFAULT_INPUT = "datasets/MyActivity_enriched.json"
 
 
 def load(path: str) -> None:
@@ -51,4 +55,10 @@ def load(path: str) -> None:
 
 
 if __name__ == "__main__":
-    load(sys.argv[1] if len(sys.argv) > 1 else DEFAULT_INPUT)
+    parser = argparse.ArgumentParser(description="Load an enriched MyActivity export into `history`.")
+    add_person_arg(parser)
+    parser.add_argument("--enriched", default=None, help="Override the enriched-JSON path")
+    args = parser.parse_args()
+
+    person = load_person_env(resolve_person(args.person))
+    load(args.enriched or str(enriched_path(person)))

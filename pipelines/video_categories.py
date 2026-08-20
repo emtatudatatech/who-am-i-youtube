@@ -12,14 +12,17 @@
     Source: https://mixedanalytics.com/blog/list-of-youtube-video-category-ids/
     Output: rows upserted into the `video_categories` Postgres table.
 
-    Usage (from repo root):  python -m pipelines.video_categories
+    Usage (from repo root):  python -m pipelines.video_categories --person emtatu
+             The map is identical for everyone; it is loaded once per database.
 """
+import argparse
 import logging
 
 from psycopg2.extras import execute_values
 
 from pipelines.common.db import get_conn
 from pipelines.common.logging_config import setup_logging
+from pipelines.common.person import add_person_arg, load_person_env, resolve_person
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -85,4 +88,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Load the video_categories dimension into one person's database.")
+    add_person_arg(parser)
+    args = parser.parse_args()
+
+    load_person_env(resolve_person(args.person))
     main()

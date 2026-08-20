@@ -3,14 +3,16 @@
 Migrations are written to be idempotent (CREATE ... IF NOT EXISTS), and applied
 ones are recorded in a schema_migrations table so re-runs are no-ops.
 
-Usage (from repo root):
-    python -m db.migrate
+Each person has their own database, so migrations are applied per person:
+    python -m db.migrate --person emtatu
 """
+import argparse
 import logging
 import pathlib
 
 from pipelines.common.db import get_conn
 from pipelines.common.logging_config import setup_logging
+from pipelines.common.person import add_person_arg, load_person_env, resolve_person
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -50,4 +52,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Apply db/migrations/*.sql to one person's database.")
+    add_person_arg(parser)
+    args = parser.parse_args()
+
+    load_person_env(resolve_person(args.person))
     main()

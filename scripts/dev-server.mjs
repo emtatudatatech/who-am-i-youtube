@@ -2,7 +2,8 @@
 // /.netlify/functions/<name> to the corresponding Netlify function handler,
 // so `vite dev` can proxy to it. Not used in production (Netlify runs the
 // functions itself). Usage: node scripts/dev-server.mjs
-import "dotenv/config";
+//                           PERSON=wambui node scripts/dev-server.mjs
+import "./env.mjs";
 import http from "node:http";
 
 const PORT = 8888;
