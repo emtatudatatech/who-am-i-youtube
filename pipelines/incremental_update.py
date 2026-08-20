@@ -2,11 +2,11 @@
 
 Flow (keeps a single, ever-growing local enriched file — no temp/extra files):
   1. Read pipeline_state.last_synced_time (UTC) from the DB.
-  2. Load the newly-downloaded raw export (default datasets/MyActivity.json).
+  2. Load the newly-downloaded raw export (datasets/<person>/MyActivity.json).
   3. Keep only raw entries with time > last_synced_time — the genuinely new ones.
   4. Enrich ONLY those new entries (YouTube Data API) in memory.
-  5. Append the enriched new entries to datasets/MyActivity_enriched.json so the
-     local enriched copy grows with new data only.
+  5. Append the enriched new entries to datasets/<person>/MyActivity_enriched.json
+     so the local enriched copy grows with new data only.
   6. Upsert those new enriched entries into `history` using the SAME parsing
      logic as the initial loader (shared module).
   7. Advance last_synced_time to the new max time.
@@ -15,15 +15,14 @@ Boundary/duplicate entries are handled by the activity_hash unique constraint,
 not hand-rolled de-dup. Re-running with the same file adds nothing.
 
 Usage (from repo root):
-    python -m pipelines.incremental_update                       # uses default paths
-    python -m pipelines.incremental_update --raw path/to/MyActivity.json
+    python -m pipelines.incremental_update --person emtatu
+    python -m pipelines.incremental_update --person emtatu --raw path/to/MyActivity.json
 """
 import argparse
 import json
 import logging
 
 import enrich_watch_history
-from enrich_watch_history import DEFAULT_INPUT_FILE, DEFAULT_OUTPUT_FILE
 from pipelines.common.db import (
     batch_upsert_history,
     get_conn,
@@ -32,20 +31,27 @@ from pipelines.common.db import (
 )
 from pipelines.common.logging_config import setup_logging
 from pipelines.common.parse import parse_utc, record_to_row
+from pipelines.common.person import (
+    add_person_arg,
+    enriched_path,
+    load_person_env,
+    raw_path,
+    resolve_person,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
 
-def run(raw_path: str = DEFAULT_INPUT_FILE, enriched_path: str = DEFAULT_OUTPUT_FILE) -> None:
+def run(raw_file: str, enriched_file: str) -> None:
     conn = get_conn()
     last_synced = get_pipeline_state(conn, "last_synced_time")
     last_synced_dt = parse_utc(last_synced) if last_synced else None
     logger.info("last_synced_time = %s", last_synced or "(none — will load all)")
 
     # Step 2: load the newly-downloaded raw export.
-    logger.info("Loading raw export %s ...", raw_path)
-    with open(raw_path, "r", encoding="utf-8") as f:
+    logger.info("Loading raw export %s ...", raw_file)
+    with open(raw_file, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
     # Step 3: keep only genuinely new entries (raw `time` is on every entry).
@@ -67,14 +73,14 @@ def run(raw_path: str = DEFAULT_INPUT_FILE, enriched_path: str = DEFAULT_OUTPUT_
 
     # Step 5: append the enriched new entries to the local enriched file.
     try:
-        with open(enriched_path, "r", encoding="utf-8") as f:
+        with open(enriched_file, "r", encoding="utf-8") as f:
             enriched_all = json.load(f)
     except FileNotFoundError:
         enriched_all = []
     enriched_all.extend(new_entries)
-    with open(enriched_path, "w", encoding="utf-8") as f:
+    with open(enriched_file, "w", encoding="utf-8") as f:
         json.dump(enriched_all, f, indent=2, ensure_ascii=False)
-    logger.info("Appended %d records to %s (now %d total).", len(new_entries), enriched_path, len(enriched_all))
+    logger.info("Appended %d records to %s (now %d total).", len(new_entries), enriched_file, len(enriched_all))
 
     # Step 6: upsert the new enriched entries (idempotent via activity_hash).
     rows = (record_to_row(e) for e in new_entries)
@@ -94,7 +100,13 @@ def run(raw_path: str = DEFAULT_INPUT_FILE, enriched_path: str = DEFAULT_OUTPUT_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Incrementally load a new MyActivity.json export into history.")
-    parser.add_argument("--raw", default=DEFAULT_INPUT_FILE, help="Path to the newly-downloaded raw MyActivity.json")
-    parser.add_argument("--enriched", default=DEFAULT_OUTPUT_FILE, help="Path to the local enriched file to append to")
+    add_person_arg(parser)
+    parser.add_argument("--raw", default=None, help="Override the newly-downloaded raw MyActivity.json path")
+    parser.add_argument("--enriched", default=None, help="Override the local enriched file to append to")
     args = parser.parse_args()
-    run(args.raw, args.enriched)
+
+    person = load_person_env(resolve_person(args.person))
+    run(
+        args.raw or str(raw_path(person)),
+        args.enriched or str(enriched_path(person)),
+    )

@@ -10,6 +10,7 @@ from googleapiclient.errors import HttpError
 from dotenv import load_dotenv
 
 from pipelines.common.logging_config import setup_logging
+from pipelines.common.person import add_person_arg, enriched_path, raw_path, resolve_person
 
 # ==============================================================================
 # CONFIGURATION
@@ -20,8 +21,6 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 API_KEY = os.getenv("YOUTUBE_API_KEY")
-DEFAULT_INPUT_FILE = "datasets/MyActivity.json"
-DEFAULT_OUTPUT_FILE = "datasets/MyActivity_enriched.json"
 
 # ==============================================================================
 # HELPER FUNCTIONS
@@ -192,7 +191,7 @@ def enrich_entries(data: List[dict]) -> int:
 # ==============================================================================
 # MAIN (whole-file enrichment)
 # ==============================================================================
-def main(input_file: str = DEFAULT_INPUT_FILE, output_file: str = DEFAULT_OUTPUT_FILE) -> None:
+def main(input_file: str, output_file: str) -> None:
     if not API_KEY:
         logger.error("Error: Please set the YOUTUBE_API_KEY environment variable.")
         return
@@ -211,7 +210,14 @@ def main(input_file: str = DEFAULT_INPUT_FILE, output_file: str = DEFAULT_OUTPUT
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enrich a Google Takeout MyActivity.json export with YouTube metadata.")
-    parser.add_argument("--input", default=DEFAULT_INPUT_FILE, help="Path to raw MyActivity.json")
-    parser.add_argument("--output", default=DEFAULT_OUTPUT_FILE, help="Path to write enriched JSON")
+    add_person_arg(parser)
+    parser.add_argument("--input", default=None, help="Override the raw MyActivity.json path")
+    parser.add_argument("--output", default=None, help="Override the enriched-JSON output path")
     args = parser.parse_args()
-    main(args.input, args.output)
+
+    # Enrichment touches no database, so the person slug only picks the paths.
+    person = resolve_person(args.person)
+    main(
+        args.input or str(raw_path(person)),
+        args.output or str(enriched_path(person)),
+    )

@@ -14,11 +14,23 @@ Welcome to **Who Am I? | YouTube**
 ## Architecture
 
 ```
-Google Takeout (My Activity → YouTube, JSON)
-   └─ enrich_watch_history.py  ──►  datasets/MyActivity_enriched.json   (YouTube Data API: category, thumbnail, channel, country, duration)
+Google Takeout (My Activity → YouTube, JSON)  →  datasets/<person>/MyActivity.json
+   └─ enrich_watch_history.py  ──►  datasets/<person>/MyActivity_enriched.json   (YouTube Data API: category, thumbnail, channel, country, duration)
         └─ pipelines/load_history.py  ──►  Neon Postgres (history, video_categories, pipeline_state)
              └─ netlify/functions/*   ──►  React + Vite dashboard (Recharts)
 ```
+
+### One repo, many people
+This repo serves every person's dashboard. Application code is shared; **data and
+deployment are per person**: their own `datasets/<person>/` folder, their own
+`people/<person>.env` (holding their Neon `DATABASE_URL`), their own Neon database,
+and their own Netlify site at `who-am-i-youtube-<person>.netlify.app`. Pushing to
+`main` redeploys everyone.
+
+Every pipeline command takes `--person <slug>`, which selects the dataset folder
+*and* the database together, so the two can't be mismatched.
+
+📋 **Adding someone new? Follow [ONBOARDING.md](ONBOARDING.md).**
 
 - **DB**: Postgres on Neon. `history` (one row per activity, ~109.5K rows) + `video_categories` + `pipeline_state`.
 - **API**: Netlify Functions (one per query) using `@neondatabase/serverless`. The browser never talks to Postgres directly.
@@ -33,58 +45,66 @@ All time-of-day / day / month insights are computed from **`time_eat`** (East Af
 - A Neon Postgres database and a YouTube Data API v3 key.
 
 ## Environment
-Copy `.env.example` → `.env` and fill in:
+Two layers. **Shared** settings — copy `.env.example` → `.env`:
 ```
-YOUTUBE_API_KEY=...        # YouTube Data API v3
-DATABASE_URL=postgresql://user:pass@host.neon.tech/db?sslmode=require
+YOUTUBE_API_KEY=...        # YouTube Data API v3 (one key enriches everyone)
 PYTHONPATH=.
 ```
-`.env` is gitignored — never commit it.
+**Per person** — copy `people/emtatu.env.example` → `people/<person>.env`:
+```
+DATABASE_URL=postgresql://user:pass@host.neon.tech/db?sslmode=require
+```
+Both are gitignored — never commit them. Only the `*.env.example` templates are tracked.
 
 ## 1. Data pipeline (Python)
+Every command takes `--person <slug>` (defaults to `$PERSON`, then `emtatu`):
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# (only when you download a NEW raw export) enrich it first:
-python enrich_watch_history.py --input datasets/MyActivity.json --output datasets/MyActivity_enriched.json
+python -m db.migrate --person emtatu                 # create tables + indexes
+python -m pipelines.video_categories --person emtatu # load the category dimension
 
-python -m db.migrate                    # create tables + indexes
-python -m pipelines.video_categories    # load the category dimension
-python -m pipelines.load_history        # load datasets/MyActivity_enriched.json  (idempotent)
+# (only when you download a NEW raw export) enrich it first:
+python enrich_watch_history.py --person emtatu       # datasets/emtatu/MyActivity.json → ..._enriched.json
+
+python -m pipelines.load_history --person emtatu     # load the enriched file (idempotent)
 ```
+Each DB command logs `Connecting as person=… → host/db` before writing anything.
 
 ### Incremental updates
-When you download a fresh `MyActivity.json` later:
+Drop a fresh `MyActivity.json` into `datasets/<person>/` and run:
 ```bash
-python -m pipelines.incremental_update
+python -m pipelines.incremental_update --person emtatu
 ```
-It enriches the new file, loads only entries newer than `pipeline_state.last_synced_time`,
-and is idempotent (dedup via a per-row `activity_hash` — re-running adds no duplicates).
-The above also runs using the default paths defined within the script.
-Ideally, once a new `MyActivity.json` file is updated into the `datasets\` folder,
-then the script will update `datasets/MyActivity_enriched.json` with the latest records.
+It enriches only the new entries, loads only those newer than
+`pipeline_state.last_synced_time`, appends them to the local enriched file, and is
+idempotent (dedup via a per-row `activity_hash` — re-running adds no duplicates).
 
 ## 2. Web app (local)
 ```bash
 npm install
-node scripts/dev-server.mjs   # serves the Netlify functions at :8888 (reads .env)
-npm run dev                   # Vite dev server at :5173, proxies /api → :8888
+PERSON=emtatu node scripts/dev-server.mjs   # Netlify functions at :8888
+npm run dev                                 # Vite dev server at :5173, proxies /api → :8888
 ```
 Open http://localhost:5173. Handy checks:
 ```bash
-node scripts/test-functions.mjs   # invoke every API function against the live DB
+PERSON=emtatu node scripts/test-functions.mjs   # invoke every API function against that person's DB
 ```
+`PERSON` picks which person's database the local API talks to; it defaults to `emtatu`.
 
 ## 3. Deploy to Netlify
 The repo already contains `netlify.toml` (build command, functions dir, `/api/*` + SPA redirects).
 
-1. Push this repo to GitHub/GitLab.
-2. In Netlify: **Add new site → Import an existing project**, pick the repo. Build settings are read from `netlify.toml` (build `npm run build`, publish `dist`, functions `netlify/functions`).
-3. **Site settings → Environment variables**: add `DATABASE_URL` (your Neon connection string). This is the only secret the deployed site needs — it is referenced only inside function code, never shipped to the browser.
-4. Deploy. The dashboard reaches Neon through the Functions layer at `/api/*`.
+**One Netlify site per person, all pointed at this same repo.** Each site sets its
+own `DATABASE_URL` environment variable and deploys from `main`, so a single push
+redeploys everyone against their own data.
 
-> The Python pipelines are run locally (or via a scheduled job) to populate Neon; they are not part of the Netlify build.
+Full walkthrough — Neon project, env file, pipeline run and Netlify site — is in
+**[ONBOARDING.md](ONBOARDING.md)**.
+
+> The Python pipelines run locally (or via a scheduled job) to populate Neon; they
+> are not part of the Netlify build. Netlify never needs `YOUTUBE_API_KEY`.
 
 ---
 
