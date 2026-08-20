@@ -93,6 +93,13 @@ body {
   .span-2 { grid-column: span 1; }
 }
 
+/* Phones: trim the page and panel gutters so charts keep their plot width —
+   axis labels get thinned by measurement, and every px back is a px of chart. */
+@media (max-width: 560px) {
+  .app { padding: 0 12px 60px; }
+  .panel { padding: 16px 12px 14px; }
+}
+
 /* ---- Stat card ---- */
 .stat .material-symbols-rounded { font-size: 26px; color: var(--yt-red); }
 .stat .value { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }

@@ -5,8 +5,8 @@ import {
 import { Panel, Chips, Loading, Empty } from "../components/primitives.jsx";
 import { ChartTooltip } from "../components/ChartTooltip.jsx";
 import { useApi } from "../lib/api.js";
-import { useChartColors, SERIES } from "../lib/chartTheme.js";
-import { fmt } from "../lib/format.js";
+import { useChartColors, useIsNarrow, xAxisProps, SERIES } from "../lib/chartTheme.js";
+import { fmt, compact } from "../lib/format.js";
 
 function Drilldown({ category, categoryName, year }) {
   const params = { category };
@@ -41,6 +41,7 @@ function Drilldown({ category, categoryName, year }) {
 
 export default function CategoriesView({ theme, stats }) {
   const colors = useChartColors(theme);
+  const narrow = useIsNarrow();
   const [year, setYear] = useState(null);
   const [selected, setSelected] = useState(null);
   const { data, loading } = useApi("top-categories", year ? { year } : {});
@@ -53,10 +54,17 @@ export default function CategoriesView({ theme, stats }) {
         <Chips options={stats?.years || []} value={year} onChange={(y) => { setYear(y); setSelected(null); }} allLabel="All-time" />
         {loading ? <Loading /> : !data?.length ? <Empty /> : (
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={data} layout="vertical" margin={{ left: 30, right: 20 }}>
+            <BarChart data={data} layout="vertical" margin={{ left: 0, right: 16, top: 4 }}>
               <CartesianGrid stroke={colors.grid} horizontal={false} />
-              <XAxis type="number" tick={{ fill: colors.muted, fontSize: 11 }} tickLine={false} axisLine={{ stroke: colors.base }} />
-              <YAxis type="category" dataKey="category_name" width={120} tick={{ fill: colors.text, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <XAxis type="number" {...xAxisProps(colors, { tickFormatter: compact })} />
+              {/* The name gutter is capped on phones so the bars keep most of the
+                  width; Recharts wraps a long name onto a second line by itself. */}
+              <YAxis
+                type="category" dataKey="category_name"
+                width={narrow ? 96 : 130}
+                tickMargin={4} tickLine={false} axisLine={false}
+                tick={{ fill: colors.text, fontSize: narrow ? 11 : 12 }}
+              />
               <Tooltip cursor={{ fill: "var(--gridline)", opacity: 0.4 }} content={<ChartTooltip valueFormatter={fmt} />} />
               <Bar dataKey="count" name="Videos" radius={[0, 6, 6, 0]} cursor="pointer" onClick={onBarClick}>
                 {data.map((d, i) => (

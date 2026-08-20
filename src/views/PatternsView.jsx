@@ -5,17 +5,17 @@ import {
 import { Panel, Loading, Empty } from "../components/primitives.jsx";
 import { ChartTooltip } from "../components/ChartTooltip.jsx";
 import { useApi } from "../lib/api.js";
-import { useChartColors } from "../lib/chartTheme.js";
-import { fmt, compact, MONTHS, DOW, hourLabel } from "../lib/format.js";
+import { useChartColors, xAxisProps, yAxisProps } from "../lib/chartTheme.js";
+import { fmt, MONTHS, DOW, hourLabel } from "../lib/format.js";
 
-function MiniBars({ data, xKey, xFmt, colors, color, interval = 0 }) {
+function MiniBars({ data, xKey, xFmt, colors, color }) {
   if (!data?.length) return <Empty />;
   return (
     <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={data} margin={{ left: -14, right: 6, top: 4 }}>
+      <BarChart data={data} margin={{ left: 0, right: 8, top: 4 }}>
         <CartesianGrid stroke={colors.grid} vertical={false} />
-        <XAxis dataKey={xKey} tickFormatter={xFmt} tick={{ fill: colors.muted, fontSize: 10 }} interval={interval} tickLine={false} axisLine={{ stroke: colors.base }} />
-        <YAxis tickFormatter={compact} tick={{ fill: colors.muted, fontSize: 10 }} tickLine={false} axisLine={false} width={38} />
+        <XAxis dataKey={xKey} {...xAxisProps(colors, { fontSize: 10, tickFormatter: xFmt })} />
+        <YAxis {...yAxisProps(colors, { fontSize: 10, width: 36 })} />
         <Tooltip cursor={{ fill: "var(--gridline)", opacity: 0.4 }} content={<ChartTooltip valueFormatter={fmt} labelFormatter={xFmt} />} />
         <Bar dataKey="count" name="Videos" fill={color} radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -73,7 +73,7 @@ export default function PatternsView({ theme }) {
   return (
     <div className="grid" style={{ gap: 16 }}>
       <div className="grid cols-3">
-        <Panel icon="light_mode" title="By time of day"><MiniBars data={data.hour} xKey="bucket" xFmt={hourLabel} colors={colors} color={colors.red} interval={2} /></Panel>
+        <Panel icon="light_mode" title="By time of day"><MiniBars data={data.hour} xKey="bucket" xFmt={hourLabel} colors={colors} color={colors.red} /></Panel>
         <Panel icon="event" title="By day of week"><MiniBars data={data.dow} xKey="bucket" xFmt={(d) => DOW[d]} colors={colors} color={colors.s1} /></Panel>
         <Panel icon="calendar_month" title="By month"><MiniBars data={data.month} xKey="bucket" xFmt={(m) => MONTHS[m - 1]} colors={colors} color={colors.s3} /></Panel>
       </div>
