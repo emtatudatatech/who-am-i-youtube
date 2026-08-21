@@ -3,6 +3,7 @@ import { useTheme } from "./theme/useTheme.js";
 import { useApi } from "./lib/api.js";
 import { Icon, Loading } from "./components/primitives.jsx";
 import Contributors from "./components/Contributors.jsx";
+import BrandFooter from "./components/BrandFooter.jsx";
 import { shortDate } from "./lib/format.js";
 import OverviewView from "./views/OverviewView.jsx";
 import ChannelsView from "./views/ChannelsView.jsx";
@@ -105,6 +106,7 @@ export default function App() {
         separately and never mixed in. “African creator” counts use the channel’s self-reported YouTube country.
       </p>
 
+      <BrandFooter />
       <Contributors />
     </div>
   );
