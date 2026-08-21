@@ -207,7 +207,8 @@ PERSON=mtu node scripts/dev-server.mjs   # functions on :8888
 npm run dev                                 # Vite on :5173
 ```
 
-Open http://localhost:5173 and click through all seven tabs.
+Open http://localhost:5173 and click through every tab. On **Superfan**, use the
+picker to switch channels — it should work for any channel, not just the default.
 
 Or check every API endpoint at once without the browser:
 
@@ -256,7 +257,7 @@ Open the URL and confirm:
 
 - [ ] The date ribbon shows **their** date range, not yours.
 - [ ] The video count matches what step 5 reported.
-- [ ] All seven tabs render without a blank panel or spinner that never stops.
+- [ ] Every tab renders without a blank panel or a spinner that never stops.
 - [ ] Light **and** dark mode both look right.
 
 A tab stuck loading almost always means `DATABASE_URL` is missing or wrong on
@@ -306,6 +307,26 @@ for p in emtatu mtu; do python -m db.migrate --person "$p"; done
 Migrations are idempotent and recorded in `schema_migrations`, so re-running is
 a no-op. Do this *before* pushing code that depends on the new column.
 
+### Crediting someone on the Wall of Thanks
+
+When a person's feedback turns into something that actually ships, add them to
+[`public/contributors.json`](public/contributors.json) — the list behind the
+rotating crown at the bottom-left of every dashboard:
+
+```json
+{
+  "name": "mtu",
+  "note": "Optional one-liner about them.",
+  "contributions": [
+    { "title": "Short feature name", "detail": "What they asked for, in a sentence or two.", "shipped": "2026-09-01" }
+  ]
+}
+```
+
+It's plain data served statically and fetched at runtime, so no code changes —
+edit, push, and it appears on **everyone's** site. Credit ideas that shipped,
+not every message; the page means more when landing on it is earned.
+
 ### Removing someone
 
 1. Delete their Neon project (destroys their data).
@@ -348,6 +369,6 @@ Person slug: ____________
 [ ] 6. PERSON=<slug> node scripts/test-functions.mjs → All functions OK
 [ ] 7. Netlify site created from this repo, branch main, DATABASE_URL set,
 [ ]    renamed to who-am-i-youtube-<slug>
-[ ] 8. Live site verified: their date range, all 7 tabs, light + dark
+[ ] 8. Live site verified: their date range, every tab, light + dark
 [ ] 9. Link sent
 ```

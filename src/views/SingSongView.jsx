@@ -57,7 +57,7 @@ export default function SingSongView({ theme }) {
   return (
     <Panel
       icon="music_note"
-      title="Sing Song"
+      title="Sing A Song"
       note="Your top 10 all-time Music channels. Click a row to reveal its 5 most-played music videos."
     >
       <div style={{ overflowX: "auto" }}>

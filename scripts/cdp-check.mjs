@@ -6,7 +6,19 @@ import fs from "node:fs";
 const OUT = process.argv[2] || ".";
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = 9333;
-const TABS = ["overview", "channels", "categories", "patterns", "fame", "trend"];
+// [screenshot name, text to match on the tab button] — the two differ wherever
+// the label isn't a single word (e.g. the "Sing A Song" tab).
+const TABS = [
+  ["overview", "overview"],
+  ["channels", "channels"],
+  ["superfan", "superfan"],
+  ["categories", "categories"],
+  ["patterns", "patterns"],
+  ["fame", "fame"],
+  ["singsong", "sing a song"],
+  ["nostalgia", "nostalgia"],
+  ["trend", "watch trend"],
+];
 
 const chrome = spawn(CHROME, [
   "--headless=new", "--disable-gpu", `--remote-debugging-port=${PORT}`,
@@ -67,14 +79,28 @@ const diag = await evalJS(`JSON.stringify({
 })`);
 console.log("LAYOUT:", diag);
 
-for (const t of TABS) {
-  await evalJS(`(()=>{const b=[...document.querySelectorAll('.tab')].find(x=>x.textContent.toLowerCase().includes(${JSON.stringify(t === "fame" ? "fame" : t)}));if(b)b.click();})()`);
+for (const [name, match] of TABS) {
+  await evalJS(`(()=>{const b=[...document.querySelectorAll('.tab')].find(x=>x.textContent.toLowerCase().includes(${JSON.stringify(match)}));if(b)b.click();})()`);
   await sleep(2600);
   const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
-  fs.writeFileSync(`${OUT}/tab-${t}.png`, Buffer.from(shot.result.data, "base64"));
+  fs.writeFileSync(`${OUT}/tab-${name}.png`, Buffer.from(shot.result.data, "base64"));
   const marker = await evalJS(`document.querySelector('.panel-head h3')?.textContent || '(none)'`);
-  console.log(`TAB ${t}: firstPanel="${marker}" screenshot saved`);
+  console.log(`TAB ${name}: firstPanel="${marker}" screenshot saved`);
 }
+
+// The Wall of Thanks lives behind the crown button, not a tab.
+await evalJS(`document.querySelector('.crown-fab')?.click()`);
+await sleep(1200);
+const thanks = await evalJS(
+  `JSON.stringify({
+     open: !!document.querySelector('.thanks-card'),
+     title: document.querySelector('#thanks-title')?.textContent || '(none)',
+     people: document.querySelectorAll('.thanks-list > li').length
+   })`
+);
+console.log("CROWN PANEL:", thanks);
+const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
+fs.writeFileSync(`${OUT}/wall-of-thanks.png`, Buffer.from(shot.result.data, "base64"));
 
 console.log(errors.length ? "\nERRORS:\n" + errors.join("\n") : "\nNo console/runtime errors across all tabs.");
 ws.close();

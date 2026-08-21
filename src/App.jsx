@@ -2,26 +2,31 @@ import { useState } from "react";
 import { useTheme } from "./theme/useTheme.js";
 import { useApi } from "./lib/api.js";
 import { Icon, Loading } from "./components/primitives.jsx";
+import Contributors from "./components/Contributors.jsx";
 import { shortDate } from "./lib/format.js";
 import OverviewView from "./views/OverviewView.jsx";
 import ChannelsView from "./views/ChannelsView.jsx";
+import ChannelProfileView from "./views/ChannelProfileView.jsx";
 import CategoriesView from "./views/CategoriesView.jsx";
 import PatternsView from "./views/PatternsView.jsx";
 import WatchOfFameView from "./views/WatchOfFameView.jsx";
 import SingSongView from "./views/SingSongView.jsx";
+import NostalgiaView from "./views/NostalgiaView.jsx";
 import WatchTrendView from "./views/WatchTrendView.jsx";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: "dashboard" },
   { id: "channels", label: "Channels", icon: "groups" },
+  { id: "superfan", label: "Superfan", icon: "person_search" },
   { id: "categories", label: "Categories", icon: "category" },
   { id: "patterns", label: "Patterns", icon: "schedule" },
   { id: "fame", label: "Watch of Fame", icon: "trophy" },
-  { id: "singsong", label: "Sing Song", icon: "music_note" },
+  { id: "singsong", label: "Sing A Song", icon: "music_note" },
+  { id: "nostalgia", label: "Nostalgia", icon: "replay" },
   { id: "trend", label: "Watch Trend", icon: "trending_up" },
 ];
 
-const TAB_IDS = new Set(["overview", "channels", "categories", "patterns", "fame", "singsong", "trend"]);
+const TAB_IDS = new Set(TABS.map((t) => t.id));
 
 export default function App() {
   const { theme, toggle } = useTheme();
@@ -83,10 +88,12 @@ export default function App() {
         <>
           {tab === "overview" && <OverviewView {...view} />}
           {tab === "channels" && <ChannelsView {...view} />}
+          {tab === "superfan" && <ChannelProfileView {...view} />}
           {tab === "categories" && <CategoriesView {...view} />}
           {tab === "patterns" && <PatternsView {...view} />}
           {tab === "fame" && <WatchOfFameView {...view} />}
           {tab === "singsong" && <SingSongView {...view} />}
+          {tab === "nostalgia" && <NostalgiaView {...view} />}
           {tab === "trend" && <WatchTrendView {...view} />}
         </>
       )}
@@ -97,6 +104,8 @@ export default function App() {
         only — ads (Takeout’s <code>From Google Ads</code>), Shorts (<code>#shorts</code> tag) and community posts are tracked
         separately and never mixed in. “African creator” counts use the channel’s self-reported YouTube country.
       </p>
+
+      <Contributors />
     </div>
   );
 }
