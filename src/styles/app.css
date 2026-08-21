@@ -138,6 +138,58 @@ body {
 .tbl .ch img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
 .tbl .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 
+/* Video thumbnails sit alongside round channel avatars in the same .ch flex row,
+   so they need their own 16:9 shape rather than the circle .ch img gives. */
+.tbl .ch img.thumb { width: 76px; height: 43px; border-radius: 7px; flex: none; }
+.video-title {
+  color: var(--text-primary); text-decoration: none; font-weight: 600;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-width: 190px; max-width: 420px; line-height: 1.35;
+}
+.video-title:hover { color: var(--yt-red); }
+
+/* ---- Channel picker (Superfan slicer) ---- */
+.picker { position: relative; }
+.picker-field {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 14px; cursor: text;
+  border: 1px solid var(--border); background: var(--glass-bg);
+}
+.picker-field:focus-within { border-color: var(--yt-red); }
+.picker-field input {
+  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+  color: var(--text-primary); font: inherit; font-size: 0.88rem;
+}
+.picker-field input::placeholder { color: var(--text-muted); }
+.picker-menu {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px);
+  max-height: 340px; overflow-y: auto; padding: 6px; border-radius: 14px;
+}
+.picker-hint {
+  color: var(--text-muted); font-size: 0.7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 10px 6px;
+}
+.picker-option {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; border: 0; border-radius: 10px; cursor: pointer;
+  background: transparent; color: var(--text-primary); text-align: left; font: inherit;
+}
+.picker-option:hover { background: color-mix(in srgb, var(--yt-red) 12%, transparent); }
+.picker-option.active { background: color-mix(in srgb, var(--yt-red) 18%, transparent); }
+.picker-option img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; }
+.picker-option .nm { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-option .ct { flex: none; }
+.picker-option .cnt {
+  margin-left: auto; flex: none; color: var(--text-muted);
+  font-size: 0.78rem; font-variant-numeric: tabular-nums;
+}
+
+/* ---- Channel profile hero ---- */
+.profile-id { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.profile-id img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); }
+.profile-id h2 { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+.profile-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
 /* ---- Bar chart race ---- */
 .race-row { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 10px; margin: 7px 0; }
 .race-label { display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; }
@@ -159,3 +211,71 @@ body {
 .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--yt-red) 14%, transparent); color: var(--yt-red); font-size: 0.72rem; font-weight: 700; }
 a.reset { color: var(--series-1); cursor: pointer; font-size: 0.78rem; font-weight: 600; }
 .footer-note { color: var(--text-muted); font-size: 0.74rem; text-align: center; margin-top: 40px; line-height: 1.6; }
+
+/* ---- Wall of Thanks ---- */
+/* Bottom-left, deliberately quiet: it should reward a glance, not compete with
+   the charts. The crown turns on its own Y axis; perspective on the button is
+   what keeps that reading as rotation rather than a horizontal squash. */
+.crown-fab {
+  position: fixed; left: 18px; bottom: 18px; z-index: 40;
+  display: grid; place-items: center; width: 44px; height: 44px;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--glass-border); background: var(--glass-bg);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: var(--glass-shadow);
+  color: var(--yt-red); opacity: 0.72; perspective: 200px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.crown-fab:hover { opacity: 1; transform: translateY(-2px); }
+.crown-svg { animation: crownSpin 9s linear infinite; transform-style: preserve-3d; }
+@keyframes crownSpin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .crown-svg { animation: none; }
+  .crown-fab:hover { transform: none; }
+}
+@media (max-width: 560px) { .crown-fab { left: 12px; bottom: 12px; width: 40px; height: 40px; } }
+
+.thanks-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.thanks-card {
+  width: min(680px, 100%); max-height: min(80vh, 760px); overflow-y: auto;
+  padding: 22px 24px 20px; border-radius: 20px;
+  /* The backdrop is already frosted; an opaque surface keeps text crisp. */
+  background: var(--surface-1);
+}
+.thanks-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.thanks-head h2 { margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+.thanks-head p { margin: 6px 0 0; color: var(--text-secondary); font-size: 0.84rem; line-height: 1.55; }
+.thanks-head .icon-btn { flex: none; margin-left: auto; }
+.thanks-crown { color: var(--yt-red); flex: none; margin-top: 2px; }
+.thanks-crown .crown-svg { animation: crownSpin 9s linear infinite; }
+
+.thanks-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.thanks-list > li { border-top: 1px solid var(--border); padding-top: 16px; }
+.thanks-person { display: flex; align-items: center; gap: 12px; }
+.thanks-avatar {
+  display: grid; place-items: center; flex: none; width: 38px; height: 38px;
+  border-radius: 50%; background: var(--yt-red); color: #fff;
+  font-weight: 800; font-size: 0.95rem;
+}
+.thanks-name { font-weight: 700; font-size: 0.95rem; }
+.thanks-note { color: var(--text-muted); font-size: 0.78rem; margin-top: 1px; }
+.thanks-items { display: grid; gap: 10px; margin: 10px 0 0 50px; }
+.thanks-item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.thanks-date { color: var(--text-muted); font-size: 0.72rem; }
+.thanks-item p { margin: 6px 0 0; color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6; }
+.thanks-foot {
+  margin: 20px 0 0; padding-top: 14px; border-top: 1px solid var(--border);
+  color: var(--text-muted); font-size: 0.78rem; line-height: 1.6;
+}
+.thanks-foot b { color: var(--text-primary); }
+@media (max-width: 560px) { .thanks-items { margin-left: 0; } }

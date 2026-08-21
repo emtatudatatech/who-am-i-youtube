@@ -1,0 +1,24 @@
+{
+  "_readme": [
+    "The Wall of Thanks, shown behind the rotating crown at the bottom-left of the app.",
+    "Add a person when their feedback turns into something that actually shipped.",
+    "One object per person; a person can hold several contributions.",
+    "Fields: name (required), note (optional one-liner about them),",
+    "contributions[] = { title, detail, shipped: YYYY-MM-DD }.",
+    "This file is served statically and fetched at runtime, so editing it and",
+    "redeploying is all it takes — no code change needed."
+  ],
+  "contributors": [
+    {
+      "name": "mchude",
+      "note": "Asked the question that turned a leaderboard into a profile.",
+      "contributions": [
+        {
+          "title": "The Superfan tab",
+          "detail": "Suggested a per-channel view with a picker at the top, so you can choose any channel and see your whole history with it — not just the ones that crack the all-time top ten.",
+          "shipped": "2026-08-21"
+        }
+      ]
+    }
+  ]
+}

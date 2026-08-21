@@ -16,18 +16,23 @@ async function probe(name, qs = {}) {
 
 // Parameters are derived from whoever's database is loaded, not hardcoded, so
 // this suite is meaningful for every person — not just the one it was written on.
-const [stats, categories, musicChannels, africa] = await Promise.all([
+const [stats, categories, musicChannels, africa, channels] = await Promise.all([
   probe("headline-stats"),
   probe("top-categories"),
   probe("music-channels"),
   probe("african-creators"),
+  probe("channel-search", { limit: "1" }),
 ]);
 
 const year = stats?.years?.length ? String(stats.years.at(-1)) : "all";
 const category = categories?.[0]?.category_id ?? "10";
 const channel = musicChannels?.[0]?.channelId ?? "";
 const country = africa?.topCountries?.[0]?.channel_country ?? "KE";
-console.log(`derived params: year=${year} category=${category} country=${country} channel=${channel || "(none)"}`);
+const topChannel = channels?.[0]?.channelId ?? "";
+console.log(
+  `derived params: year=${year} category=${category} country=${country} ` +
+  `musicChannel=${channel || "(none)"} topChannel=${topChannel || "(none)"}`
+);
 
 const cases = [
   ["headline-stats", {}],
@@ -48,6 +53,10 @@ const cases = [
   ["music-videos", { channel }],
   ["watch-trend-tab", {}],
   ["bar-chart-race", {}],
+  ["nostalgia", {}],
+  ["channel-search", {}],
+  ["channel-search", { q: "the" }],
+  ["channel-profile", { channel: topChannel }],
 ];
 
 let failures = 0;
