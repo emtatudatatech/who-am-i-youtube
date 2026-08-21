@@ -212,6 +212,33 @@ body {
 a.reset { color: var(--series-1); cursor: pointer; font-size: 0.78rem; font-weight: 600; }
 .footer-note { color: var(--text-muted); font-size: 0.74rem; text-align: center; margin-top: 40px; line-height: 1.6; }
 
+/* ---- Brand footer ---- */
+.brand {
+  margin-top: 22px; padding-top: 18px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  text-align: center;
+}
+.brand-copy {
+  color: var(--text-muted); font-size: 0.7rem;
+  font-weight: 600; letter-spacing: 0.09em;
+}
+.brand-made {
+  display: flex; align-items: center; justify-content: center;
+  gap: 7px; flex-wrap: wrap;
+  color: var(--text-secondary); font-size: 0.8rem;
+}
+/* A hairline keeps the flag's white band from dissolving into a light page. */
+.ke-flag {
+  display: block; border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.brand-link {
+  color: var(--yt-red); font-weight: 700; text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.brand-link:hover { border-bottom-color: var(--yt-red); }
+
 /* ---- Wall of Thanks ---- */
 /* Bottom-left, deliberately quiet: it should reward a glance, not compete with
    the charts. The crown turns on its own Y axis; perspective on the button is

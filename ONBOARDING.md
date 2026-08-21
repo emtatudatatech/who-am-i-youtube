@@ -235,19 +235,29 @@ variables and deploy history.
 4. **Build settings:** leave them alone. `netlify.toml` already specifies the
    build command (`npm run build`), publish directory (`dist`), functions
    directory, and the `/api/*` + SPA redirects.
-5. Before the first deploy, open **Add environment variables** and add:
+5. Before the first deploy, open **Add environment variables** and add both:
 
-   | Key | Value |
-   | --- | --- |
-   | `DATABASE_URL` | their Neon connection string from step 2 |
+   | Key | Value | Why |
+   | --- | --- | --- |
+   | `DATABASE_URL` | their Neon connection string from step 2 | what the API functions read |
+   | `PERSON` | their slug, e.g. `mtu` | builds the link-preview + canonical URLs |
 
-   That is the *only* variable a deployed site needs. It is read exclusively
-   inside function code and never reaches the browser. The `YOUTUBE_API_KEY` is
-   **not** needed here — enrichment runs on your machine, not in the build.
+   `DATABASE_URL` is read exclusively inside function code and never reaches the
+   browser. `YOUTUBE_API_KEY` is **not** needed here — enrichment runs on your
+   machine, not in the build.
+
+   > ⚠️ **`PERSON` is not optional on a new site.** It defaults to `emtatu`, so
+   > leaving it unset makes this person's `og:url` and `<link rel="canonical">`
+   > point at *your* site — wrong link previews, and search engines told the
+   > page is a duplicate of someone else's. Set it before the first deploy.
+   >
+   > If a person later gets a custom domain, set `SITE_URL` (e.g.
+   > `https://youtube.example.com`) — it overrides the slug-derived URL entirely.
 6. **Deploy**.
 7. Rename the site to fix its URL: **Site configuration → General → Site
    details → Change site name** → `who-am-i-youtube-mtu`, giving
-   `https://who-am-i-youtube-mtu.netlify.app/`.
+   `https://who-am-i-youtube-mtu.netlify.app/`. **This must match `PERSON`**, or
+   the canonical URL will point somewhere that doesn't exist.
 
 ---
 
@@ -258,6 +268,8 @@ Open the URL and confirm:
 - [ ] The date ribbon shows **their** date range, not yours.
 - [ ] The video count matches what step 5 reported.
 - [ ] Every tab renders without a blank panel or a spinner that never stops.
+- [ ] Paste the URL into a WhatsApp/Slack message: the preview card appears, and
+      the link it resolves to is **their** site, not yours (that's `PERSON`).
 - [ ] Light **and** dark mode both look right.
 
 A tab stuck loading almost always means `DATABASE_URL` is missing or wrong on
@@ -341,6 +353,8 @@ Nothing of theirs was ever in Git, so there is no history to purge.
 
 | Symptom | Cause / fix |
 | --- | --- |
+| Shared link previews as someone else's site | `PERSON` unset (or wrong) on that Netlify site — it falls back to `emtatu`. Fix it and redeploy. |
+| Link preview shows no card at all | Scrapers cache aggressively; re-scrape via the platform's debugger, and confirm `/og-image.png` returns 200 on that domain. |
 | `No env file for person 'x' at people/x.env` | Step 3 not done, or the slug is misspelled. |
 | `No active person. Call ... load_person_env()` | A script reached the DB without `--person`. Add the flag. |
 | `people/x.env does not set DATABASE_URL` | The template was copied but not filled in. |
@@ -367,7 +381,7 @@ Person slug: ____________
 [ ] 5. migrate → video_categories → enrich → load_history all run with --person
 [ ]    ...and the "Connecting as person=" line matched the intended database
 [ ] 6. PERSON=<slug> node scripts/test-functions.mjs → All functions OK
-[ ] 7. Netlify site created from this repo, branch main, DATABASE_URL set,
+[ ] 7. Netlify site created from this repo, branch main, DATABASE_URL + PERSON set,
 [ ]    renamed to who-am-i-youtube-<slug>
 [ ] 8. Live site verified: their date range, every tab, light + dark
 [ ] 9. Link sent

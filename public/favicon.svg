@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Who Am I? | YouTube">
+  <!-- Same mark as .masthead .logo: YouTube-red rounded square, white play glyph. -->
+  <rect width="64" height="64" rx="15" fill="#e63329"/>
+  <path d="M25.5 19.2v25.6L46 32z" fill="#ffffff"/>
+</svg>

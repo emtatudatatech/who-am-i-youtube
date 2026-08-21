@@ -103,8 +103,23 @@ redeploys everyone against their own data.
 Full walkthrough — Neon project, env file, pipeline run and Netlify site — is in
 **[ONBOARDING.md](ONBOARDING.md)**.
 
+Each site needs two environment variables: `DATABASE_URL` (its Neon database) and
+`PERSON` (its slug — builds the `og:url` / canonical link-preview URLs). `SITE_URL`
+overrides the derived URL if a person gets a custom domain.
+
 > The Python pipelines run locally (or via a scheduled job) to populate Neon; they
 > are not part of the Netlify build. Netlify never needs `YOUTUBE_API_KEY`.
+
+### Brand assets
+`public/favicon.svg` is the source mark. The two committed PNGs — `favicon-96.png`
+(fallback favicon) and `og-image.png` (1200×630 link-preview card) — are generated
+from it and from markup in the script, so they stay reproducible:
+
+```bash
+node scripts/make-brand-assets.mjs   # needs local Chrome; not part of `npm run build`
+```
+
+Keep the card generic: one image serves every person's site.
 
 ---
 
